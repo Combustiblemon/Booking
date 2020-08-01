@@ -72,7 +72,23 @@ def UpdateCustomer(conn, customerID, customer):
     
     return cur.lastrowid
 
-def GetCustomerIDByName(conn, name):
+def DeleteCustomer(conn, CustomerID):
+    """Deletes a customer
+
+    :param conn: The connection object
+    :param CustomerID: The ID of the customer to delete
+    """
+    
+    if conn is None:
+        print('Database connection failed.')
+        return None
+
+    cur = conn.cursor()
+    cur.execute('DELETE FROM customers WHERE CustomerID = ?;', (CustomerID,))
+    conn.commit()
+    
+    return cur.lastrowid
+    
     """Returns the CustomerID of a given name
 
     Args:
