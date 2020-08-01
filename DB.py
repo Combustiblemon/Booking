@@ -143,7 +143,26 @@ def GetCustomer(conn, name, year=int(datetime.today().strftime('%Y'))):
     
     return customerID
 
-def GetRoomCustomers(conn, roomID):
+def GetCustomersByMonth(conn, month=int(datetime.today().strftime('%m')), year=int(datetime.today().strftime('%Y'))):
+    """Returns all the customers of the given month
+
+    :param conn: The database connection object
+    :param month: The month to get the data. Defaults to the current month
+    :param year: The year to get the data. Default to current year
+    """
+    if conn is None:
+        print('Database connection failed.')
+        return None
+    
+    if month < 10:
+        month = f'0{str(month)}'
+    
+    cur = conn.cursor()
+    cur.execute(f'SELECT CustomerName, People, CheckIn, CheckOut, PricePerNight FROM customers WHERE CheckIn LIKE "{year}-{month}%" OR CheckOut LIKE "{year}-{month}%" ORDER BY CheckIn')
+    customers = cur.fetchall()
+    
+    return customers
+    
     """Returns all the customers of the given roomID
 
     Args:
