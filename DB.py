@@ -36,16 +36,20 @@ def AddCustomer(conn, customer):
 
     Args:
         :param conn: The database connection object
-        :param customer: The customer data [CustomerID, CustomerName, People, CheckIn, CheckOut, PricePerNight, RoomID]
+        :param customer: The customer object
     """
     if conn is None:
         print('Database connection failed.')
-        return
+        return None
     
     sql = ''' INSERT INTO customers(CustomerName,People,CheckIn,CheckOut,PricePerNight,RoomID)
               VALUES(?,?,?,?,?,?) '''
     cur = conn.cursor()
-    cur.execute(sql, customer)
+    cur.execute(sql, customer.GetSQLFormatedDataForInsertion())
+    conn.commit()
+
+    return cur.lastrowid
+
     conn.commit()
 
     return cur.lastrowid
