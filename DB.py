@@ -1,6 +1,8 @@
 import sqlite3
 from sqlite3 import Error
-from datetime import date
+from datetime import date, datetime
+from Customer import Customer
+import logging
 
 def CreateConnection(db_file):
     """ create a database connection to the SQLite database
@@ -15,6 +17,19 @@ def CreateConnection(db_file):
         print(e)
 
     return conn
+
+def ConvertStringToDate(dateString):
+    """Converts a string to a datetime object. YYYY-MM-DD
+
+    :param dateString: The string to get converted
+    """
+    try:
+        temp = dateString.split('-')
+        dateObj = date(int(temp[0]), int(temp[1]), int(temp[2]))
+        return dateObj
+    except Exception as e:
+        logging.exception("exception")
+        return dateString
 
 def AddCustomer(conn, customer):
     """Add the customer Data to the DB
