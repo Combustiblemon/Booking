@@ -118,17 +118,19 @@ def GetCustomer(conn, name, year=int(datetime.today().strftime('%Y'))):
         customers.append(Customer(item[1], item[3], item[4], item[6], item[0], item[5], item[2]))
         
     return customers
+
+def GetCustomerIDByName(conn, name, roomID):
     """Returns the CustomerID of a given name
 
     Args:
         :param conn: The database connection object
         :param name: The name of the customer to find the ID
-        :type name: string
+        :param roomID: The ID of the room
         :return: List of the CustomerIDs found or None
     """
     if conn is None:
         print('Database connection failed.')
-        return
+        return None
     
     cur = conn.cursor()
     cur.execute(f'SELECT CustomerID FROM customers WHERE CustomerName = "{name}"')
@@ -163,6 +165,7 @@ def GetCustomersByMonth(conn, month=int(datetime.today().strftime('%m')), year=i
     
     return customers
     
+def GetCustomersByRoomID(conn, roomID):
     """Returns all the customers of the given roomID
 
     Args:
@@ -171,8 +174,12 @@ def GetCustomersByMonth(conn, month=int(datetime.today().strftime('%m')), year=i
         
         :return: List of the customers or None
     """
+    if conn is None:
+        print('Database connection failed.')
+        return None
+    
     cur = conn.cursor()
-    cur.execute(f'SELECT CustomerName, People, CheckIn, CheckOut, PricePerNight FROM customers WHERE RoomID = {roomID}')
+    cur.execute(f'SELECT CustomerName, People, CheckIn, CheckOut, PricePerNight FROM customers WHERE RoomID = {roomID} ORDER BY CheckIn')
     customers = cur.fetchall()
     
     if not customers:
@@ -188,6 +195,10 @@ def GetRoomOccupiedDates(conn, roomID):
         
         :return: List of dates the room is occupied
     """
+    if conn is None:
+        print('Database connection failed.')
+        return None
+    
     cur = conn.cursor()
     cur.execute(f'SELECT CheckIn, CheckOut FROM customers WHERE RoomID = {roomID} ORDER BY CheckIn')
     Temp = cur.fetchall()
@@ -208,11 +219,9 @@ def GetRoomOccupiedDates(conn, roomID):
     
     # Convert dates from string to datetime objects
     for item in dates: 
-        temp = item[0].split('-')
-        item[0] = date(int(temp[0]), int(temp[1]), int(temp[2]))
+        item[0] = ConvertStringToDate(item[0])
         
-        temp = item[1].split('-')
-        item[1] = date(int(temp[0]), int(temp[1]), int(temp[2]))
+        item[1] = ConvertStringToDate(item[1])
 
     return dates
     
