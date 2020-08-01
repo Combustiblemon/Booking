@@ -89,6 +89,35 @@ def DeleteCustomer(conn, CustomerID):
     
     return cur.lastrowid
     
+
+def GetCustomer(conn, name, year=int(datetime.today().strftime('%Y'))):
+    """
+
+        :param conn: The database connection object
+        :param name: The name of the customer to get the data of
+        :param year: The date of the check in. defaults to current year
+    """
+    if conn is None:
+        print('Database connection failed.')
+        return None
+    
+    cur = conn.cursor()
+    cur.execute(f'SELECT CustomerID,CustomerName,People,CheckIn,CheckOut,PricePerNight,RoomID FROM customers WHERE CustomerName = "{name}" AND CheckIn LIKE "{year}%"')
+    temp = cur.fetchall()
+    
+    # convert tuple to list
+    data = [list(i) for i in temp]
+    
+    for item in data:
+        item[3] = ConvertStringToDate(item[3])
+        
+        item[4] = ConvertStringToDate(item[4])
+    
+    customers = []  
+    for item in data:
+        customers.append(Customer(item[1], item[3], item[4], item[6], item[0], item[5], item[2]))
+        
+    return customers
     """Returns the CustomerID of a given name
 
     Args:
