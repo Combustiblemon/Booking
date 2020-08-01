@@ -50,8 +50,26 @@ def AddCustomer(conn, customer):
 
     return cur.lastrowid
 
-    conn.commit()
+def UpdateCustomer(conn, customerID, customer):
+    """Updates an existing customer in the database with new data
 
+    :param conn: The database connection object
+    :param customerID: The ID of the customer to be updated
+    :param customer: The customer object
+    """
+    
+    if conn is None:
+        print('Database connection failed.')
+        return None
+    
+    data = customer.GetSQLFormatedDataForInsertion()
+    data.append(customerID)
+    
+    sql = ''' UPDATE customers SET CustomerName = ?,People = ?,CheckIn = ?,CheckOut = ?,PricePerNight = ?,RoomID = ? WHERE CustomerID = ?'''
+    cur = conn.cursor()
+    cur.execute(sql, data)
+    conn.commit()
+    
     return cur.lastrowid
 
 def GetCustomerIDByName(conn, name):
