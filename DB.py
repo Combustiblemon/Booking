@@ -3,8 +3,9 @@ from sqlite3 import Error
 from datetime import date, datetime
 from Customer import Customer
 import logging
+import os
 
-def CreateConnection(db_file):
+def CreateConnection():
     """ create a database connection to the SQLite database
         specified by the db_file
     :param db_file: database file
@@ -12,7 +13,7 @@ def CreateConnection(db_file):
     """
     conn = None
     try:
-        conn = sqlite3.connect(db_file)
+        conn = sqlite3.connect(os.environ['DATABASE_PATH'])
     except Error as e:
         print(e)
 
