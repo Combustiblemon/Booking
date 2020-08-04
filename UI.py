@@ -1,6 +1,10 @@
 from PyQt5 import QtWidgets, QtCore, uic
 from PyQt5.QtWidgets import QDialog, QMessageBox
+from PyQt5.QtGui import QIcon, QColor
 from PyQt5.uic import uiparser
+from datetime import datetime, date, timedelta
+from Customer import Customer
+import platform
 import DB
 import os
 import json
