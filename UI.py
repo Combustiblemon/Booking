@@ -92,32 +92,39 @@ class MainWindow(QtWidgets.QMainWindow):
         conn.close()
         
         # set up the table rows
-        for item in rooms:
-            rowPosition = self.tableWidget.rowCount()
-            self.tableWidget.insertRow(rowPosition)
-            self.tableWidget.setVerticalHeaderItem(rowPosition, QtWidgets.QTableWidgetItem(str(item)))
+        try:
+            for item in rooms:
+                rowPosition = self.tableWidget.rowCount()
+                self.tableWidget.insertRow(rowPosition)
+                self.tableWidget.setVerticalHeaderItem(rowPosition, QtWidgets.QTableWidgetItem(str(item)))
         
-        # set the number of columns based on the selected month
-        self.tableWidget.setColumnCount(0)
-        self.tableWidget.setColumnCount(self.months[f'{self.monthSelection.currentIndex() + 1}'])
-        
-        
-        for item in data:
-            row = rooms.index(item.RoomID)  # find the row by searching the room list
-            column = item.CheckIn.day  # starting column is the check in day
-            span = item.NumberOfStayNights  # how many cells to merge based on the stay days
-            if item.CheckIn.month < (self.monthSelection.currentIndex() + 1):  # if the CheckIn date is on a previous month calculate difference
-                column = 0
-                delta = -(item.CheckIn - date(self.yearSelection.date().year(), self.monthSelection.currentIndex() + 1, 1))
-                span = item.NumberOfStayNights - delta.days + 1  # set span to difference
+            # set the number of columns based on the selected month
+            self.tableWidget.setColumnCount(0)
+            self.tableWidget.setColumnCount(self.months[f'{self.monthSelection.currentIndex() + 1}'])
             
-            self.tableWidget.setItem(row, column, QtWidgets.QTableWidgetItem(f'"{item.Name}" Άτομα: {item.People} Τιμή ανά βράδυ: {item.PricePerNight}'))
-            temp = self.tableWidget.item(row, column)  # access the item just created
-            temp.setBackground(QColor(dictionary[f"{item.BookingType}"][1][0], dictionary[f"{item.BookingType}"][1][1], dictionary[f"{item.BookingType}"][1][2], alpha=150))  # set the background color of the item based on the dictionary
-            temp.setData(1, item.CustomerID)  # set the metadata of the item to the CustomerID
-            self.tableWidget.setSpan(row, column, 1, span)  # merge the cells
+            
+            for item in data:
+                try:
+                    row = rooms.index(item.RoomID)  # find the row by searching the room list
+                    column = item.CheckIn.day  # starting column is the check in day
+                    span = item.NumberOfStayNights  # how many cells to merge based on the stay days
+                    if item.CheckIn.month < (self.monthSelection.currentIndex() + 1):  # if the CheckIn date is on a previous month calculate difference
+                        column = 0
+                        delta = -(item.CheckIn - date(self.yearSelection.date().year(), self.monthSelection.currentIndex() + 1, 1))
+                        span = item.NumberOfStayNights - delta.days + 1  # set span to difference
+                    
+                    self.tableWidget.setItem(row, column, QtWidgets.QTableWidgetItem(f'"{item.Name}" Άτομα: {item.People} Τιμή ανά βράδυ: {item.PricePerNight}'))
+                    temp = self.tableWidget.item(row, column)  # access the item just created
+                    temp.setBackground(QColor(dictionary[f"{item.BookingType}"][1][0], dictionary[f"{item.BookingType}"][1][1], dictionary[f"{item.BookingType}"][1][2], alpha=150))  # set the background color of the item based on the dictionary
+                    temp.setData(1, item.CustomerID)  # set the metadata of the item to the CustomerID
+                    self.tableWidget.setSpan(row, column, 1, span)  # merge the cells
+                except ValueError:
+                    pass
+                    
+            del data  # clean up memory by deleting the customer data from memory
         
-        del data  # clean up memory by deleting the customer data from memory
+        except TypeError:
+            return
         
     def cellDoubleClicked(self, row, column):
         try:
