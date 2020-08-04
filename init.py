@@ -39,8 +39,7 @@ if calendar.isleap(int(datetime.today().strftime('%Y'))):
 if correctLoad:
     mWindow = MainWindow(months)
     loadingW.close()
-    # mWindow.showMaximized()
-    mWindow.show()
+    mWindow.showMaximized()
     
     # little Easter egg for my girlfriend
     if datetime.today().strftime('%m-%d') == '11-09':
