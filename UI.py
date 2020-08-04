@@ -39,10 +39,24 @@ class MainWindow(QtWidgets.QMainWindow):
         self.button.clicked.connect(self.Test)
         
     def SetTableStyle(self):
-        """ header = self.tableWidget.horizontalHeader()
-        header.setSectionResizeMode(0, QtWidgets.QHeaderView.ResizeToContents) """
-        self.tableWidget.setColumnCount(self.months[f'{int(datetime.today().strftime("%m"))}'])
-    
+        OSVersion = f"{platform.system()} {platform.release()}"
+        if OSVersion == "Windows 10":
+            self.tableWidget.setStyleSheet("QHeaderView::section{"
+                                           "border-top:0px solid #c8c8c8;"
+                                           "border-left:0px solid #c8c8c8;"
+                                           "border-right:2px solid #c8c8c8;"
+                                           "border-bottom: 2px solid #c8c8c8;"
+                                           "background-color:white;"
+                                           "padding:4px;"
+                                           "}"
+                                           "QTableCornerButton::section{"
+                                           "border-top:0px solid #c8c8c8;"
+                                           "border-left:0px solid #c8c8c8;"
+                                           "border-right:2px solid #c8c8c8;"
+                                           "border-bottom: 2px solid #c8c8c8;"
+                                           "background-color:white;"
+                                           "}")
+            
     # gets called whenever the combobox is changed
     def MonthChange(self):
         self.UpdateDates(self.months[f'{self.monthSelection.currentIndex() + 1}'])
