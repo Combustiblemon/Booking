@@ -7,23 +7,7 @@ from datetime import datetime
 from DB import FindCustomerIDByName, AddCustomer, CreateConnection
 
 
-os.environ['DATABASE_PATH'] = r"./files/data/IliaAppartments.db"
-conn = CreateConnection(os.environ['DATABASE_PATH'])
-cur = conn.cursor()
-""" cur.execute('SELECT * FROM customers WHERE CustomerName = "notName" ORDER BY 1')
-rows = cur.fetchall()
-for row in rows:
-    print(row) """
-
-customerID = FindCustomerIDByName(conn, 'TestName')
-print(customerID)
-
-customer = ['TestName', 4, '2020-7-31', '2020-8-5', 60, 3]
-""" for i in range(0, 5):
-    customer[4] += 10
-    AddCustomer(conn, customer) """
-conn.close()
-
+os.environ['DATABASE_PATH'] = r"./files/data/database.db"
 # set up the Qapplication
 app = QtWidgets.QApplication(sys.argv)
 
