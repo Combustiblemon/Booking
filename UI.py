@@ -2,8 +2,17 @@ from PyQt5 import QtWidgets, QtCore, uic
 from PyQt5.QtWidgets import QLabel, QDialog, QMessageBox, QMainWindow, QWidget, QPushButton, QAction, QInputDialog, QLineEdit, QFileDialog
 from PyQt5.QtGui import QIcon
 from PyQt5.uic import uiparser
-from datetime import datetime
+import os
+import json
 
+
+dictionary = {} 
+with open('./files/data/dictionary.json', 'r', encoding="utf8") as file:
+    dictionary = json.load(file)
+    
+roomDictionary = {} 
+with open('./files/data/roomDictionary.json', 'r', encoding="utf8") as file:
+    roomDictionary = json.load(file)
 class MainWindow(QtWidgets.QMainWindow):
     def __init__(self, months):
         super(MainWindow, self).__init__()
