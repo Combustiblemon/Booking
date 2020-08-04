@@ -182,3 +182,75 @@ class CustomerInfoWindow(QtWidgets.QDialog):
         temp = self.exec_()
         return self.edited
         
+class CustomerDataWindow(QtWidgets.QDialog):
+    def __init__(self, title='Δεδομένα πελάτη', customerInfo=None):
+        super(CustomerDataWindow, self).__init__()
+        # Load the main UI file
+        uic.loadUi('./files/UI/CustomerData.ui', self)
+        self.setWindowFlags(QtCore.Qt.WindowSystemMenuHint | QtCore.Qt.WindowTitleHint | QtCore.Qt.WindowCloseButtonHint)
+        
+        self.setWindowTitle(title)
+        
+        self.ConnectLogicToObjects()
+        
+        if customerInfo:
+            self.InitializeData(customerInfo)
+    
+    def ConnectLogicToObjects(self):
+        self.bookingTypeInput = self.findChild(QtWidgets.QComboBox, 'bookingTypeInput')
+        self.bookingTypeInput.addItems(roomDictionary.values())
+        
+        self.checkInInput = self.findChild(QtWidgets.QDateEdit, 'checkInInput')
+        self.checkInInput.setDate(datetime.today())
+        
+        self.checkOutInput = self.findChild(QtWidgets.QDateEdit, 'checkOutInput')
+        self.checkOutInput.setDate(datetime.today() + timedelta(5))
+        
+        self.commentInput = self.findChild(QtWidgets.QTextEdit, 'commentInput')
+        
+        self.nameinput = self.findChild(QtWidgets.QLineEdit, 'nameInput')
+        
+        self.peopleInput = self.findChild(QtWidgets.QSpinBox, 'peopleInput')
+        
+        self.pricePerNightInput = self.findChild(QtWidgets.QDoubleSpinBox, 'pricePerNightInput')
+        
+        self.roomIDInput = self.findChild(QtWidgets.QSpinBox, 'roomIDInput')
+        
+    def InitializeData(self, customerInfo):
+        self.bookingTypeInput.setCurrentIndex(customerInfo.BookingType - 1)
+        
+        self.checkInInput.setDate(customerInfo.CheckIn)
+        
+        self.checkOutInput.setDate(customerInfo.CheckOut)
+        
+        self.commentInput.setText(customerInfo.Comments)
+        
+        self.nameinput.setText(customerInfo.Name)
+        
+        self.peopleInput.setValue(customerInfo.People)
+        
+        self.pricePerNightInput.setValue(customerInfo.PricePerNight)
+        
+        self.roomIDInput.setValue(customerInfo.RoomID)
+        
+        
+        
+    def GetTypeList(self):
+        temp = roomDictionary.values()
+        itemList = []
+        for item in temp:
+            itemList.append(item[0])
+        
+        return itemList
+    
+    def GetData(self):
+        if self.exec_() == QDialog.Accepted:
+            return Customer(self.nameinput.text(),
+                            self.checkInInput.date().toPyDate(), 
+                            self.checkOutInput.date().toPyDate(), 
+                            self.roomIDInput.value(), 
+                            self.bookingTypeInput.currentIndex() + 1,
+                            self.pricePerNightInput.value(),
+                            self.peopleInput.value(),
+                            Comments=self.commentInput.toPlainText())
+
