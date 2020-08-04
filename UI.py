@@ -119,6 +119,20 @@ class MainWindow(QtWidgets.QMainWindow):
         
         del data  # clean up memory by deleting the customer data from memory
         
+    def cellDoubleClicked(self, row, column):
+        try:
+            conn = DB.CreateConnection()
+            CustomerInfo = DB.GetCustomerByID(conn, self.tableWidget.item(row, column).data(1))
+            conn.close()
+            
+            window = CustomerInfoWindow(CustomerInfo)
+            edited = window.exec___()
+            
+            if edited:
+                self.UpdateTableData()
+        except AttributeError:
+            return
+    
             
 class CustomerInfoWindow(QtWidgets.QDialog):
     def __init__(self, customerInfo):
