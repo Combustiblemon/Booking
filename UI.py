@@ -254,3 +254,37 @@ class CustomerDataWindow(QtWidgets.QDialog):
                             self.peopleInput.value(),
                             Comments=self.commentInput.toPlainText())
 
+class LoadingWindow(QtWidgets.QDialog):
+    def __init__(self, text, title='Κρατήσεις'):
+        super(LoadingWindow, self).__init__()
+        # Load the main UI file
+        uic.loadUi('./files/UI/LoadingWindow.ui', self)
+        
+        self.setWindowTitle(title)
+        
+        self.label = self.findChild(QtWidgets.QLabel, 'label')
+        self.label.setText(text)
+        
+class ErrorWindow(QtWidgets.QDialog):
+    def __init__(self, text, title="Error"):
+        super(ErrorWindow, self).__init__()
+        # Load the main UI file
+        uic.loadUi('./files/UI/ErrorWindow.ui', self)
+        
+        self.setWindowTitle(title)
+        
+        self.label = self.findChild(QtWidgets.QLabel, 'label')
+        self.label.setText(text)
+
+def MessageBox(title='Έξοδος', text="Είστε σίγουροι ότι θέλετε να κλείσετε το πρόγραμμα;"):
+    """
+    :param title: Window title
+    :param text: Window Text
+    """
+    msgBox = QMessageBox()
+    msgBox.setWindowTitle(title)
+    msgBox.setText(text)
+    msgBox.setStandardButtons(QMessageBox.Yes | QMessageBox.Cancel)
+    msgBox = msgBox.exec()
+
+    return msgBox
