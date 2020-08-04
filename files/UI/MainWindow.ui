@@ -322,8 +322,26 @@
      <height>21</height>
     </rect>
    </property>
+   <widget class="QMenu" name="menu">
+    <property name="title">
+     <string>Μενού</string>
+    </property>
+    <addaction name="action"/>
+    <addaction name="action_2"/>
+   </widget>
+   <addaction name="menu"/>
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
+  <action name="action">
+   <property name="text">
+    <string>Προσθήκη Δωματίου</string>
+   </property>
+  </action>
+  <action name="action_2">
+   <property name="text">
+    <string>Διαγραφή Δωματίου</string>
+   </property>
+  </action>
  </widget>
  <resources/>
  <connections/>
