@@ -24,6 +24,7 @@ class MainWindow(QtWidgets.QMainWindow):
         uic.loadUi('./files/UI/MainWindow.ui', self)
         self.months = months
         self.ConnectLogicToObjects()
+        self.UpdateTableData()
         
     # Adding pointers to all the objects of the UI
     def ConnectLogicToObjects(self):
@@ -70,20 +71,51 @@ class MainWindow(QtWidgets.QMainWindow):
                                            "background-color:white;"
                                            "}")
             
-    # gets called whenever the combobox is changed
-    def MonthChange(self):
-        self.UpdateDates(self.months[f'{self.monthSelection.currentIndex() + 1}'])
+    def UpdateTableData(self):
+        # Create connection to database
+        conn = DB.CreateConnection()
+        # get the customer data for the current month
+        data = DB.GetCustomersByMonth(conn, self.monthSelection.currentIndex() + 1, self.yearSelection.date().year(), self.roomTypeSelection.currentIndex())
         
-    def UpdateDates(self, dateNumber):
-        self.tableWidget.setColumnCount(dateNumber)
-    
-    def Test(self):
-        model = self.tableWidget.model()
-
-        print(model)
+        #
+        if self.roomTypeSelection.currentIndex() == 0:
+            rowNumber = DB.GetRoomNumber(conn)
+        else:
+            rowNumber = DB.GetRoomNumber(conn, self.roomTypeSelection.currentIndex())
         
-    def Test2(self):
-        pass
         
-    def cellDoubleClicked(self, e):
-        print(e)
+        # set the number of rows based on the selected roomtype
+        self.tableWidget.setRowCount(0)
+        
+        # get the rooms based on the room type
+        rooms = DB.GetRoomsByType(conn, self.roomTypeSelection.currentIndex())
+        conn.close()
+        
+        # set up the table rows
+        for item in rooms:
+            rowPosition = self.tableWidget.rowCount()
+            self.tableWidget.insertRow(rowPosition)
+            self.tableWidget.setVerticalHeaderItem(rowPosition, QtWidgets.QTableWidgetItem(str(item)))
+        
+        # set the number of columns based on the selected month
+        self.tableWidget.setColumnCount(0)
+        self.tableWidget.setColumnCount(self.months[f'{self.monthSelection.currentIndex() + 1}'])
+        
+        
+        for item in data:
+            row = rooms.index(item.RoomID)  # find the row by searching the room list
+            column = item.CheckIn.day  # starting column is the check in day
+            span = item.NumberOfStayNights  # how many cells to merge based on the stay days
+            if item.CheckIn.month < (self.monthSelection.currentIndex() + 1):  # if the CheckIn date is on a previous month calculate difference
+                column = 0
+                delta = -(item.CheckIn - date(self.yearSelection.date().year(), self.monthSelection.currentIndex() + 1, 1))
+                span = item.NumberOfStayNights - delta.days + 1  # set span to difference
+            
+            self.tableWidget.setItem(row, column, QtWidgets.QTableWidgetItem(f'"{item.Name}" Άτομα: {item.People} Τιμή ανά βράδυ: {item.PricePerNight}'))
+            temp = self.tableWidget.item(row, column)  # access the item just created
+            temp.setBackground(QColor(dictionary[f"{item.BookingType}"][1][0], dictionary[f"{item.BookingType}"][1][1], dictionary[f"{item.BookingType}"][1][2], alpha=150))  # set the background color of the item based on the dictionary
+            temp.setData(1, item.CustomerID)  # set the metadata of the item to the CustomerID
+            self.tableWidget.setSpan(row, column, 1, span)  # merge the cells
+        
+        del data  # clean up memory by deleting the customer data from memory
+        
