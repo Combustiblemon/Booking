@@ -128,6 +128,32 @@ def GetCustomer(conn, name, year=int(datetime.today().strftime('%Y'))):
         
     return customers
 
+def GetCustomerByID(conn, customerID):
+    """
+
+        :param conn: The database connection object
+        :param customerID: The ID of the customer
+    """
+    if conn is None:
+        DBError()
+        return None
+    
+    cur = conn.cursor()
+    cur.execute(f'SELECT CustomerID, CustomerName, People, CheckIn, CheckOut, PricePerNight, RoomID, BookingType, Comments FROM customers WHERE CustomerID = "{customerID}"')
+    temp = cur.fetchall()
+    
+    if not temp:
+        return None
+    
+    # convert tuple to list
+    data = [list(i) for i in temp]
+
+    data[0][3] = ConvertStringToDate(data[0][3])
+        
+    data[0][4] = ConvertStringToDate(data[0][4])
+        
+    return Customer(data[0][1], data[0][3], data[0][4], data[0][6], data[0][7], data[0][5], data[0][2], data[0][0], data[0][8])
+
 def GetCustomerIDByName(conn, name, roomID):
     """Returns the CustomerID of a given name
 
