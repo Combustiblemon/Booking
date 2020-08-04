@@ -348,7 +348,7 @@ def GetRoomsByType(conn, roomType=None):
         return None
     
     if roomType:
-        sql = f'SELECT RoomID FROM rooms WHERE RoomType = {roomType}'
+        sql = f'SELECT RoomID FROM rooms WHERE RoomType = {roomType} ORDER BY RoomID'
     else:
         sql = 'SELECT RoomID FROM rooms'
     
@@ -361,3 +361,39 @@ def GetRoomsByType(conn, roomType=None):
         data.append(item[0])
     
     return tuple(data)
+
+def AddRoom(conn, roomID, roomType):
+    """Adds a new room to the database
+
+    :param conn: The database connection object
+    :param roomID: The ID of the room
+    :param roomType: The type of the room
+    """
+    if conn is None:
+        DBError()
+        return None
+    
+    sql = "INSERT INTO rooms(RoomID,RoomType) Values(?,?)"
+    
+    cur = conn.cursor()
+    cur.execute(sql, (roomID, roomType))
+    conn.commit()
+    
+    return cur.lastrowid
+
+def DeleteRoom(conn, roomID):
+    """Deletes a room from the database
+
+    :param conn: The connection object
+    :param roomID: The ID of the room to delete
+    """
+    
+    if conn is None:
+        DBError()
+        return None
+
+    cur = conn.cursor()
+    cur.execute('DELETE FROM rooms WHERE RoomID = ?;', (roomID,))
+    conn.commit()
+    
+    return cur.lastrowid

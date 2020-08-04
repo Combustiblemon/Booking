@@ -130,3 +130,5 @@ dmypy.json
 
 # SQLite database
 *.db
+
+pyinstaller command.txt

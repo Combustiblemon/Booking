@@ -52,6 +52,12 @@ class MainWindow(QtWidgets.QMainWindow):
         self.roomTypeSelection = self.findChild(QtWidgets.QComboBox, 'roomTypeSelection')
         self.roomTypeSelection.addItems(roomDictionary.values())
         
+        self.addRoom = self.findChild(QtWidgets.QAction, 'addRoom')
+        self.addRoom.triggered.connect(self.addRoomPressed)
+        
+        self.removeRoom = self.findChild(QtWidgets.QAction, 'removeRoom')
+        self.removeRoom.triggered.connect(self.removeRoomPressed)
+        
     def SetTableStyle(self):
         OSVersion = f"{platform.system()} {platform.release()}"
         if OSVersion == "Windows 10":
@@ -163,6 +169,20 @@ class MainWindow(QtWidgets.QMainWindow):
         except AttributeError as e:
             print(e)
             return
+    
+    def addRoomPressed(self):
+        window = AddRoomWindow()
+        temp = window.exec__()
+        
+        if temp:
+            self.UpdateTableData()
+    
+    def removeRoomPressed(self):
+        window = RemoveRoomWindow()
+        temp = window.exec__()
+        
+        if temp:
+            self.UpdateTableData()
     
     def closeEvent(self, event):
         close = MessageBox()
@@ -305,7 +325,69 @@ class CustomerDataWindow(QtWidgets.QDialog):
                             self.pricePerNightInput.value(),
                             self.peopleInput.value(),
                             Comments=self.commentInput.toPlainText())
+            
 
+class AddRoomWindow(QtWidgets.QDialog):
+    def __init__(self):
+        super(AddRoomWindow, self).__init__()
+        # Load the main UI file
+        uic.loadUi('./files/UI/AddRoom.ui', self)
+        self.setWindowFlags(QtCore.Qt.WindowSystemMenuHint | QtCore.Qt.WindowTitleHint | QtCore.Qt.WindowCloseButtonHint)
+        
+        self.ConnectLogicToObjects()
+        
+    def ConnectLogicToObjects(self):
+        self.roomIDInput = self.findChild(QtWidgets.QSpinBox, 'roomIDInput')
+        
+        self.roomTypeInput = self.findChild(QtWidgets.QComboBox, 'roomTypeInput')
+        self.roomTypeInput.addItems(roomDictionary.values())
+           
+    def exec__(self):
+        if self.exec_() == QDialog.Accepted:
+            conn = DB.CreateConnection()
+            DB.AddRoom(conn, self.roomIDInput.value(), self.roomTypeInput.currentIndex() + 1)
+            conn.close()
+            return 1
+        
+
+class RemoveRoomWindow(QtWidgets.QDialog):
+    def __init__(self):
+        super(RemoveRoomWindow, self).__init__()
+        # Load the main UI file
+        uic.loadUi('./files/UI/DeleteRoom.ui', self)
+        self.setWindowFlags(QtCore.Qt.WindowSystemMenuHint | QtCore.Qt.WindowTitleHint | QtCore.Qt.WindowCloseButtonHint)
+        
+        self.ConnectLogicToObjects()
+        
+    def ConnectLogicToObjects(self):
+        self.listWidget = self.findChild(QtWidgets.QListWidget, "listWidget")
+        self.listWidget.addItems(self.GetRooms())
+        self.listWidget.setCurrentRow(-1)
+        
+    def GetRooms(self):
+        conn = DB.CreateConnection()
+        rooms = DB.GetRoomsByType(conn)
+        conn.close()
+        
+        if rooms:
+            rooms = [str(i) for i in rooms]
+        
+        
+        return rooms
+    
+    def exec__(self):
+        if self.exec_() == QDialog.Accepted:
+            row = self.listWidget.currentRow()
+            item = self.listWidget.item(row)
+            if item:
+                msg = MessageBox('Προσοχή', f'Είστε σίγουροι ότι θέλετε να διαγράψετε το δωμάτιο "{item.text()}";')
+                if msg == QMessageBox.Yes:
+                    conn = DB.CreateConnection()
+                    DB.DeleteRoom(conn, int(item.text()))
+                    conn.close()
+                    
+                    return 1
+        
 class LoadingWindow(QtWidgets.QDialog):
     def __init__(self, text, title='Κρατήσεις'):
         super(LoadingWindow, self).__init__()

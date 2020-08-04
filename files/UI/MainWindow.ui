@@ -326,19 +326,22 @@
     <property name="title">
      <string>Μενού</string>
     </property>
-    <addaction name="action"/>
-    <addaction name="action_2"/>
+    <addaction name="addRoom"/>
+    <addaction name="removeRoom"/>
    </widget>
    <addaction name="menu"/>
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
-  <action name="action">
+  <action name="addRoom">
    <property name="text">
     <string>Προσθήκη Δωματίου</string>
    </property>
   </action>
-  <action name="action_2">
+  <action name="removeRoom">
    <property name="text">
+    <string>Διαγραφή Δωματίου</string>
+   </property>
+   <property name="toolTip">
     <string>Διαγραφή Δωματίου</string>
    </property>
   </action>
