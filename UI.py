@@ -119,3 +119,66 @@ class MainWindow(QtWidgets.QMainWindow):
         
         del data  # clean up memory by deleting the customer data from memory
         
+            
+class CustomerInfoWindow(QtWidgets.QDialog):
+    def __init__(self, customerInfo):
+        super(CustomerInfoWindow, self).__init__()
+        # Load the main UI file
+        uic.loadUi('./files/UI/CustomerInfo.ui', self)
+        self.setWindowFlags(QtCore.Qt.WindowSystemMenuHint | QtCore.Qt.WindowTitleHint | QtCore.Qt.WindowCloseButtonHint)
+        
+        self.edited = None
+        
+        self.ConnectLogicToObjects(customerInfo)
+        
+    def ConnectLogicToObjects(self, customerInfo):
+        self.textLabel = self.findChild(QtWidgets.QLabel, 'textLabel')
+        self.SetLabelText(customerInfo)
+        
+        self.OKButton = self.findChild(QtWidgets.QPushButton, 'OKButton')
+        self.OKButton.clicked.connect(self.OKClicked)
+        
+        self.editButton = self.findChild(QtWidgets.QPushButton, 'editButton')
+        self.editButton.clicked.connect(lambda EditInfo: self.EditInfo(customerInfo))
+        
+    def SetLabelText(self, customerInfo):
+        text = f"""<p><b>Όνομα κράτησης:</b> {customerInfo.Name}</p>
+                <p>     <b>Αριθμός ατόμων:</b> {customerInfo.People}</p>
+                <p>     <b>Check in:</b>  {customerInfo.CheckIn}</p>
+                <p>     <b>Check out:</b> {customerInfo.CheckOut}</p>
+                <p>     <b>Διανυκτερεύσεις:</b> {customerInfo.NumberOfStayNights}</p>
+                <p>     <b>Τιμή ανά βράδυ:</b> {customerInfo.PricePerNight}€</p>
+                <p>     <b>Σύνολο:</b> {customerInfo.TotalPrice}€</p>
+                <p>     <b>Δωμάτιο:</b> {customerInfo.RoomID} ({self.GetRoomType(customerInfo.RoomID)})</p>
+                <p>     <b>Κράτηση από:</b> {dictionary[f"{customerInfo.BookingType}"][0]}</p>
+                
+                <p>     <b>Σχόλια:</b> {customerInfo.Comments}</p>"""
+        
+        self.textLabel.setText(text)        
+        
+    def EditInfo(self, customerInfo):
+        window = CustomerDataWindow(customerInfo=customerInfo)
+        data = window.GetData()
+        
+        try:
+            if data != customerInfo:  # if the data from the edit window are different from before, update the database and set the edited flag to 1
+                self.SetLabelText(data)
+                conn = DB.CreateConnection()
+                DB.UpdateCustomer(conn, customerInfo.CustomerID, data)
+                conn.close()
+                self.edited = 1
+        except AttributeError as e:
+            return
+        
+    def OKClicked(self):
+        self.close()
+    
+    def GetRoomType(self, roomID):
+        conn = DB.CreateConnection()
+        return roomDictionary[f'{DB.GetRoomType(conn, roomID)}']
+        conn.close()
+        
+    def exec___(self):
+        temp = self.exec_()
+        return self.edited
+        
