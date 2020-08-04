@@ -43,3 +43,8 @@ class Customer:
         
         Comments: {self.Comments}"""
         return string
+    
+    def __eq__(self, other):
+        if (isinstance(other, Customer)):
+            return (self.Name == other.Name and self.People == other.People and self.CheckIn == other.CheckIn and self.CheckOut == other.CheckOut and self.PricePerNight == other.PricePerNight and self.RoomID == other.RoomID and self.BookingType == other.BookingType and self.Comments == other.Comments)
+        return False
