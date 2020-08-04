@@ -4,9 +4,11 @@ import calendar
 from PyQt5 import QtWidgets
 from UI import MainWindow, LoadingWindow, ErrorWindow
 from datetime import date, datetime
+from dotenv import load_dotenv
+load_dotenv()
 
 
-os.environ['DATABASE_PATH'] = r"./files/data/database.db"
+# os.environ['DATABASE_PATH'] = r"./files/data/database.db"
 correctLoad = 1
 # set up the Qapplication
 app = QtWidgets.QApplication(sys.argv)
