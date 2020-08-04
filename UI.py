@@ -142,6 +142,28 @@ class MainWindow(QtWidgets.QMainWindow):
             DB.AddCustomer(conn, data)
             conn.close()
             self.UpdateTableData()
+    
+    def DeleteBookingPressed(self):
+        try:
+            item = self.tableWidget.currentItem()
+            text = f"Είστε σίγουροι ότι θέλετε να διαγράψετε την κράτηση;\n\n{item.text()}"
+            test = MessageBox("Προσοχή", text)
+            if test == QMessageBox.Yes:
+                conn = DB.CreateConnection()
+                DB.DeleteCustomer(conn, item.data(1))
+                conn.close()
+                self.UpdateTableData()
+        except AttributeError as e:
+            print(e)
+            return
+    
+    def closeEvent(self, event):
+        close = MessageBox()
+
+        if close == QMessageBox.Yes:
+            event.accept()
+        else:
+            event.ignore()
             
 class CustomerInfoWindow(QtWidgets.QDialog):
     def __init__(self, customerInfo):
