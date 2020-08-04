@@ -2,6 +2,7 @@ import sqlite3
 from sqlite3 import Error
 from datetime import date, datetime
 from Customer import Customer
+import UI
 import logging
 import os
 
@@ -15,9 +16,13 @@ def CreateConnection():
     try:
         conn = sqlite3.connect(os.environ['DATABASE_PATH'])
     except Error as e:
-        print(e)
+        DBError(e)
 
     return conn
+
+def DBError(error=''):
+    errorW = UI.ErrorWindow(f'Αποτυχία σύνδεσης με βάση δεδομένων!\n{error}')
+    errorW.show()
 
 def ConvertStringToDate(dateString):
     """Converts a string to a datetime object. YYYY-MM-DD
@@ -40,7 +45,7 @@ def AddCustomer(conn, customer):
         :param customer: The customer object
     """
     if conn is None:
-        print('Database connection failed.')
+        DBError()
         return None
     
     sql = ''' INSERT INTO customers(CustomerName,People,CheckIn,CheckOut,PricePerNight,RoomID)
@@ -60,7 +65,7 @@ def UpdateCustomer(conn, customerID, customer):
     """
     
     if conn is None:
-        print('Database connection failed.')
+        DBError()
         return None
     
     data = customer.GetSQLFormatedDataForInsertion()
@@ -81,7 +86,7 @@ def DeleteCustomer(conn, CustomerID):
     """
     
     if conn is None:
-        print('Database connection failed.')
+        DBError()
         return None
 
     cur = conn.cursor()
@@ -99,12 +104,15 @@ def GetCustomer(conn, name, year=int(datetime.today().strftime('%Y'))):
         :param year: The date of the check in. defaults to current year
     """
     if conn is None:
-        print('Database connection failed.')
+        DBError()
         return None
     
     cur = conn.cursor()
     cur.execute(f'SELECT CustomerID,CustomerName,People,CheckIn,CheckOut,PricePerNight,RoomID FROM customers WHERE CustomerName = "{name}" AND CheckIn LIKE "{year}%"')
     temp = cur.fetchall()
+    
+    if not temp:
+        return None
     
     # convert tuple to list
     data = [list(i) for i in temp]
@@ -130,19 +138,19 @@ def GetCustomerIDByName(conn, name, roomID):
         :return: List of the CustomerIDs found or None
     """
     if conn is None:
-        print('Database connection failed.')
+        DBError()
         return None
     
     cur = conn.cursor()
     cur.execute(f'SELECT CustomerID FROM customers WHERE CustomerName = "{name}"')
     temp = cur.fetchall()
     
+    if not temp:
+        return None
+    
     customerID = []
     for item in temp:
         customerID.append(item[0])
-    
-    if not customerID:
-        return None
     
     return customerID
 
@@ -154,7 +162,7 @@ def GetCustomersByMonth(conn, month=int(datetime.today().strftime('%m')), year=i
     :param year: The year to get the data. Default to current year
     """
     if conn is None:
-        print('Database connection failed.')
+        DBError()
         return None
     
     if month < 10:
@@ -176,14 +184,13 @@ def GetCustomersByRoomID(conn, roomID):
         :return: List of the customers or None
     """
     if conn is None:
-        print('Database connection failed.')
+        DBError()
         return None
     
     cur = conn.cursor()
-    cur.execute(f'SELECT CustomerName, People, CheckIn, CheckOut, PricePerNight FROM customers WHERE RoomID = {roomID} ORDER BY CheckIn')
-    customers = cur.fetchall()
+    temp = cur.fetchall()
     
-    if not customers:
+    if not temp:
         return None
     return customers
 
@@ -197,7 +204,7 @@ def GetRoomOccupiedDates(conn, roomID):
         :return: List of dates the room is occupied
     """
     if conn is None:
-        print('Database connection failed.')
+        DBError()
         return None
     
     cur = conn.cursor()
