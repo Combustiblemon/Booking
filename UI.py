@@ -27,16 +27,29 @@ class MainWindow(QtWidgets.QMainWindow):
         
     # Adding pointers to all the objects of the UI
     def ConnectLogicToObjects(self):
+        self.centralWidget().layout().setContentsMargins(10, 10, 10, 10)
+        
         self.tableWidget = self.findChild(QtWidgets.QTableWidget, 'tableWidget')
         self.tableWidget.cellDoubleClicked.connect(self.cellDoubleClicked)
         self.SetTableStyle()
         
         self.monthSelection = self.findChild(QtWidgets.QComboBox, 'monthSelection')
         self.monthSelection.setCurrentIndex(int(datetime.today().strftime('%m')) - 1)
-        self.monthSelection.currentIndexChanged.connect(self.MonthChange)
         
-        self.button = self.findChild(QtWidgets.QPushButton, 'pushButton')
-        self.button.clicked.connect(self.Test)
+        self.yearSelection = self.findChild(QtWidgets.QDateEdit, 'yearSelection')
+        self.yearSelection.setDate(datetime.today())
+        
+        self.showButton = self.findChild(QtWidgets.QPushButton, 'showButton')
+        self.showButton.clicked.connect(self.UpdateTableData)
+        
+        self.addBooking = self.findChild(QtWidgets.QPushButton, 'addBooking')
+        self.addBooking.clicked.connect(self.AddBookingClicked)
+        
+        self.deleteBooking = self.findChild(QtWidgets.QPushButton, 'deleteBooking')
+        self.deleteBooking.clicked.connect(self.DeleteBookingPressed)
+        
+        self.roomTypeSelection = self.findChild(QtWidgets.QComboBox, 'roomTypeSelection')
+        self.roomTypeSelection.addItems(roomDictionary.values())
         
     def SetTableStyle(self):
         OSVersion = f"{platform.system()} {platform.release()}"
