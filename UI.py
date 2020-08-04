@@ -133,6 +133,15 @@ class MainWindow(QtWidgets.QMainWindow):
         except AttributeError:
             return
     
+    def AddBookingClicked(self):
+        window = CustomerDataWindow('Δεδομένα Κράτησης')
+        data = window.GetData()
+        
+        if data:
+            conn = DB.CreateConnection()
+            DB.AddCustomer(conn, data)
+            conn.close()
+            self.UpdateTableData()
             
 class CustomerInfoWindow(QtWidgets.QDialog):
     def __init__(self, customerInfo):
