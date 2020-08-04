@@ -180,12 +180,13 @@ def GetCustomerIDByName(conn, name, roomID):
     
     return customerID
 
-def GetCustomersByMonth(conn, month=int(datetime.today().strftime('%m')), year=int(datetime.today().strftime('%Y'))):
-    """Returns all the customers of the given month
+def GetCustomersByMonth(conn, month=int(datetime.today().strftime('%m')), year=int(datetime.today().strftime('%Y')), roomType=0):
+    """Returns all the customers of the given month and roomType. Defaults to getting all the data per month
 
     :param conn: The database connection object
     :param month: The month to get the data. Defaults to the current month
     :param year: The year to get the data. Default to current year
+    :param roomType: The ID of the type of room
     """
     if conn is None:
         DBError()
@@ -194,9 +195,35 @@ def GetCustomersByMonth(conn, month=int(datetime.today().strftime('%m')), year=i
     if month < 10:
         month = f'0{str(month)}'
     
+    sql = f'''SELECT CustomerID, CustomerName, People, CheckIn, CheckOut, PricePerNight, RoomID, BookingType, Comments 
+    FROM customers 
+    WHERE CheckIn LIKE "{year}-{month}%" OR CheckOut LIKE "{year}-{month}%" 
+    ORDER BY CheckIn'''
+    
+    if roomType != 0:
+        sql = f'''SELECT CustomerID, CustomerName, People, CheckIn, CheckOut, PricePerNight, RoomID, BookingType, Comments 
+    FROM customers 
+    WHERE (CheckIn LIKE "{year}-{month}%" OR CheckOut LIKE "{year}-{month}%") AND RoomID IN {GetRoomsByType(conn, roomType)}
+    ORDER BY CheckIn'''
+    
     cur = conn.cursor()
-    cur.execute(f'SELECT CustomerName, People, CheckIn, CheckOut, PricePerNight FROM customers WHERE CheckIn LIKE "{year}-{month}%" OR CheckOut LIKE "{year}-{month}%" ORDER BY CheckIn')
-    customers = cur.fetchall()
+    cur.execute(sql)
+    temp = cur.fetchall()
+    
+    if not temp:
+        return None
+    
+    # convert tuple to list
+    data = [list(i) for i in temp]
+    
+    for item in data:
+        item[3] = ConvertStringToDate(item[3])
+        
+        item[4] = ConvertStringToDate(item[4])
+
+    customers = []  
+    for item in data:
+        customers.append(Customer(item[1], item[3], item[4], item[6], item[7], item[5], item[2], item[0], item[8]))
     
     return customers
     
