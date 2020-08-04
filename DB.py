@@ -274,3 +274,25 @@ def GetRoomType(conn, roomID):
     temp = cur.fetchall()
     
     return temp[0][0]
+
+def GetRoomNumber(conn, roomType=0):
+    """Returns the number of rooms for a given type. By default returns the number of all rooms
+
+    :param conn: The dtabase connection object
+    :param roomType [int]: The ID of the room type
+    """
+    if conn is None:
+        DBError()
+        return None
+    
+    sql = 'SELECT RoomType FROM rooms'
+    
+    if roomType != 0:
+        sql = f'SELECT RoomType FROM rooms WHERE RoomType = {roomType}'
+        
+    cur = conn.cursor()
+    cur.execute(sql)
+    temp = cur.fetchall()
+    
+    return len(temp)
+
