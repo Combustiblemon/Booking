@@ -48,8 +48,8 @@ def AddCustomer(conn, customer):
         DBError()
         return None
     
-    sql = ''' INSERT INTO customers(CustomerName,People,CheckIn,CheckOut,PricePerNight,RoomID)
-              VALUES(?,?,?,?,?,?) '''
+    sql = ''' INSERT INTO customers(CustomerName,People,CheckIn,CheckOut,PricePerNight,RoomID,BookingType,Comments)
+              VALUES(?,?,?,?,?,?,?,?) '''
     cur = conn.cursor()
     cur.execute(sql, customer.GetSQLFormatedDataForInsertion())
     conn.commit()
@@ -71,7 +71,7 @@ def UpdateCustomer(conn, customerID, customer):
     data = customer.GetSQLFormatedDataForInsertion()
     data.append(customerID)
     
-    sql = ''' UPDATE customers SET CustomerName = ?,People = ?,CheckIn = ?,CheckOut = ?,PricePerNight = ?,RoomID = ? WHERE CustomerID = ?'''
+    sql = ''' UPDATE customers SET CustomerName = ?,People = ?,CheckIn = ?,CheckOut = ?,PricePerNight = ?,RoomID = ?,BookingType = ?,Comments = ? WHERE CustomerID = ?'''
     cur = conn.cursor()
     cur.execute(sql, data)
     conn.commit()
@@ -108,7 +108,7 @@ def GetCustomer(conn, name, year=int(datetime.today().strftime('%Y'))):
         return None
     
     cur = conn.cursor()
-    cur.execute(f'SELECT CustomerID,CustomerName,People,CheckIn,CheckOut,PricePerNight,RoomID FROM customers WHERE CustomerName = "{name}" AND CheckIn LIKE "{year}%"')
+    cur.execute(f'SELECT CustomerID, CustomerName, People, CheckIn, CheckOut, PricePerNight, RoomID, BookingType, Comments FROM customers WHERE CustomerName = "{name}" AND CheckIn LIKE "{year}%"')
     temp = cur.fetchall()
     
     if not temp:
@@ -124,7 +124,7 @@ def GetCustomer(conn, name, year=int(datetime.today().strftime('%Y'))):
     
     customers = []  
     for item in data:
-        customers.append(Customer(item[1], item[3], item[4], item[6], item[0], item[5], item[2]))
+        customers.append(Customer(item[1], item[3], item[4], item[6], item[7], item[5], item[2], item[0], item[8]))
         
     return customers
 
@@ -214,10 +214,24 @@ def GetCustomersByRoomID(conn, roomID):
         return None
     
     cur = conn.cursor()
+    cur.execute(f'SELECT CustomerID, CustomerName, People, CheckIn, CheckOut, PricePerNight, RoomID, BookingType, Comments FROM customers WHERE RoomID = {roomID} ORDER BY CheckIn')
     temp = cur.fetchall()
     
     if not temp:
         return None
+    
+    # convert tuple to list
+    data = [list(i) for i in temp]
+    
+    for item in data:
+        item[3] = ConvertStringToDate(item[3])
+        
+        item[4] = ConvertStringToDate(item[4])
+    
+    customers = []  
+    for item in data:
+        customers.append(Customer(item[1], item[3], item[4], item[6], item[7], item[5], item[2], item[0], item[8]))
+        
     return customers
 
 def GetRoomOccupiedDates(conn, roomID):
@@ -319,5 +333,4 @@ def GetRoomsByType(conn, roomType=None):
     for item in temp:
         data.append(item[0])
     
-
     return tuple(data)
