@@ -258,4 +258,19 @@ def GetRoomOccupiedDates(conn, roomID):
         item[1] = ConvertStringToDate(item[1])
 
     return dates
+
+def GetRoomType(conn, roomID):
+    """Returns the type of room for a given ID
+
+    :param conn: The database connection object
+    :param roomID: The ID of the room
+    """
+    if conn is None:
+        DBError()
+        return None
     
+    cur = conn.cursor()
+    cur.execute(f'SELECT RoomType FROM rooms WHERE RoomID = {roomID}')
+    temp = cur.fetchall()
+    
+    return temp[0][0]
