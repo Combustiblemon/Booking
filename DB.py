@@ -296,3 +296,28 @@ def GetRoomNumber(conn, roomType=0):
     
     return len(temp)
 
+def GetRoomsByType(conn, roomType=None):
+    """Returns all the room IDs for the given room type. Defaults to returning all rooms
+
+    :param conn: The database connection object
+    :param roomType [int]: The ID of the room type
+    """
+    if conn is None:
+        DBError()
+        return None
+    
+    if roomType:
+        sql = f'SELECT RoomID FROM rooms WHERE RoomType = {roomType}'
+    else:
+        sql = 'SELECT RoomID FROM rooms'
+    
+    cur = conn.cursor()
+    cur.execute(sql)
+    temp = cur.fetchall()
+    
+    data = []
+    for item in temp:
+        data.append(item[0])
+    
+
+    return tuple(data)
