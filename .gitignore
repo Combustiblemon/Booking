@@ -132,3 +132,4 @@ dmypy.json
 *.db
 
 pyinstaller command.txt
+backup/data/*

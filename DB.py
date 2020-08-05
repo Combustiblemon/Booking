@@ -6,6 +6,46 @@ import UI
 import logging
 import os
 
+def CreateDatabase():
+    """Creates the database file if it is missing
+    """
+    
+    conn = CreateConnection()
+    cur = conn.cursor()
+    
+    try:
+        sql = """ CREATE TABLE rooms (
+        RoomID   INTEGER PRIMARY KEY
+                        NOT NULL,
+        RoomType INTEGER NOT NULL
+        ); """
+        
+        cur.execute(sql)
+        
+        sql = """CREATE TABLE customers (
+        CustomerID    INTEGER NOT NULL
+                            PRIMARY KEY
+                            UNIQUE,
+        CustomerName  TEXT    NOT NULL,
+        People        INTEGER,
+        CheckIn       DATE,
+        CheckOut      DATE,
+        PricePerNight REAL,
+        RoomID        INTEGER NOT NULL,
+        BookingType   INTEGER NOT NULL,
+        Comments      STRING,
+        FOREIGN KEY (
+            RoomID
+        )
+        REFERENCES rooms (RoomID) 
+        );"""
+        
+        cur.execute(sql)
+        conn.commit()
+    except Error as e:
+        errorW = UI.ErrorWindow(e)
+    
+
 def CreateConnection():
     """ create a database connection to the SQLite database
         specified by the db_file
