@@ -270,7 +270,10 @@ class CustomerDataWindow(QtWidgets.QDialog):
     
     def ConnectLogicToObjects(self):
         self.bookingTypeInput = self.findChild(QtWidgets.QComboBox, 'bookingTypeInput')
-        self.bookingTypeInput.addItems(roomDictionary.values())
+        data = []
+        for item in dictionary.values():
+            data.append(item[0])
+        self.bookingTypeInput.addItems(data)
         
         self.checkInInput = self.findChild(QtWidgets.QDateEdit, 'checkInInput')
         self.checkInInput.setDate(datetime.today())
@@ -317,6 +320,7 @@ class CustomerDataWindow(QtWidgets.QDialog):
     
     def GetData(self):
         if self.exec_() == QDialog.Accepted:
+            delta = self.checkOutInput.date().toPyDate() - self.checkInInput.date().toPyDate()
             return Customer(self.nameinput.text(),
                             self.checkInInput.date().toPyDate(), 
                             self.checkOutInput.date().toPyDate(), 
@@ -324,7 +328,9 @@ class CustomerDataWindow(QtWidgets.QDialog):
                             self.bookingTypeInput.currentIndex() + 1,
                             self.pricePerNightInput.value(),
                             self.peopleInput.value(),
-                            Comments=self.commentInput.toPlainText())
+                            Comments=self.commentInput.toPlainText(),
+                            NumberOfStayNights=delta.days - 1,
+                            TotalPrice=(delta.days - 1) * self.pricePerNightInput.value())
             
 
 class AddRoomWindow(QtWidgets.QDialog):

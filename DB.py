@@ -34,6 +34,8 @@ def CreateDatabase():
         RoomID        INTEGER NOT NULL,
         BookingType   INTEGER NOT NULL,
         Comments      STRING,
+        NumberOfStayNights INTEGER,
+        TotalPrice         REAL,
         FOREIGN KEY (
             RoomID
         )
@@ -88,8 +90,8 @@ def AddCustomer(conn, customer):
         DBError()
         return None
     
-    sql = ''' INSERT INTO customers(CustomerName,People,CheckIn,CheckOut,PricePerNight,RoomID,BookingType,Comments)
-              VALUES(?,?,?,?,?,?,?,?) '''
+    sql = ''' INSERT INTO customers(CustomerName,People,CheckIn,CheckOut,PricePerNight,RoomID,BookingType,Comments,NumberOfStayNights,TotalPrice)
+              VALUES(?,?,?,?,?,?,?,?,?,?) '''
     cur = conn.cursor()
     cur.execute(sql, customer.GetSQLFormatedDataForInsertion())
     conn.commit()
@@ -111,7 +113,7 @@ def UpdateCustomer(conn, customerID, customer):
     data = customer.GetSQLFormatedDataForInsertion()
     data.append(customerID)
     
-    sql = ''' UPDATE customers SET CustomerName = ?,People = ?,CheckIn = ?,CheckOut = ?,PricePerNight = ?,RoomID = ?,BookingType = ?,Comments = ? WHERE CustomerID = ?'''
+    sql = ''' UPDATE customers SET CustomerName = ?,People = ?,CheckIn = ?,CheckOut = ?,PricePerNight = ?,RoomID = ?,BookingType = ?,Comments = ?,NumberOfStayNights = ?,TotalPrice = ? WHERE CustomerID = ?'''
     cur = conn.cursor()
     cur.execute(sql, data)
     conn.commit()
@@ -148,7 +150,7 @@ def GetCustomer(conn, name, year=int(datetime.today().strftime('%Y'))):
         return None
     
     cur = conn.cursor()
-    cur.execute(f'SELECT CustomerID, CustomerName, People, CheckIn, CheckOut, PricePerNight, RoomID, BookingType, Comments FROM customers WHERE CustomerName = "{name}" AND CheckIn LIKE "{year}%"')
+    cur.execute(f'SELECT CustomerID, CustomerName, People, CheckIn, CheckOut, PricePerNight, RoomID, BookingType, Comments, NumberOfStayNights, TotalPrice FROM customers WHERE CustomerName = "{name}" AND CheckIn LIKE "{year}%"')
     temp = cur.fetchall()
     
     if not temp:
@@ -164,7 +166,7 @@ def GetCustomer(conn, name, year=int(datetime.today().strftime('%Y'))):
     
     customers = []  
     for item in data:
-        customers.append(Customer(item[1], item[3], item[4], item[6], item[7], item[5], item[2], item[0], item[8]))
+        customers.append(Customer(item[1], item[3], item[4], item[6], item[7], item[5], item[2], item[0], item[8], item[9], item[10]))
         
     return customers
 
@@ -179,7 +181,7 @@ def GetCustomerByID(conn, customerID):
         return None
     
     cur = conn.cursor()
-    cur.execute(f'SELECT CustomerID, CustomerName, People, CheckIn, CheckOut, PricePerNight, RoomID, BookingType, Comments FROM customers WHERE CustomerID = "{customerID}"')
+    cur.execute(f'SELECT CustomerID, CustomerName, People, CheckIn, CheckOut, PricePerNight, RoomID, BookingType, Comments, NumberOfStayNights, TotalPrice FROM customers WHERE CustomerID = "{customerID}"')
     temp = cur.fetchall()
     
     if not temp:
@@ -192,7 +194,7 @@ def GetCustomerByID(conn, customerID):
         
     data[0][4] = ConvertStringToDate(data[0][4])
         
-    return Customer(data[0][1], data[0][3], data[0][4], data[0][6], data[0][7], data[0][5], data[0][2], data[0][0], data[0][8])
+    return Customer(data[0][1], data[0][3], data[0][4], data[0][6], data[0][7], data[0][5], data[0][2], data[0][0], data[0][8], data[0][9], data[0][10])
 
 def GetCustomerIDByName(conn, name, roomID):
     """Returns the CustomerID of a given name
@@ -235,13 +237,13 @@ def GetCustomersByMonth(conn, month=int(datetime.today().strftime('%m')), year=i
     if month < 10:
         month = f'0{str(month)}'
     
-    sql = f'''SELECT CustomerID, CustomerName, People, CheckIn, CheckOut, PricePerNight, RoomID, BookingType, Comments 
+    sql = f'''SELECT CustomerID, CustomerName, People, CheckIn, CheckOut, PricePerNight, RoomID, BookingType, Comments, NumberOfStayNights, TotalPrice
     FROM customers 
     WHERE CheckIn LIKE "{year}-{month}%" OR CheckOut LIKE "{year}-{month}%" 
     ORDER BY CheckIn'''
     
     if roomType != 0:
-        sql = f'''SELECT CustomerID, CustomerName, People, CheckIn, CheckOut, PricePerNight, RoomID, BookingType, Comments 
+        sql = f'''SELECT CustomerID, CustomerName, People, CheckIn, CheckOut, PricePerNight, RoomID, BookingType, Comments, NumberOfStayNights, TotalPrice 
     FROM customers 
     WHERE (CheckIn LIKE "{year}-{month}%" OR CheckOut LIKE "{year}-{month}%") AND RoomID IN {GetRoomsByType(conn, roomType)}
     ORDER BY CheckIn'''
@@ -263,7 +265,7 @@ def GetCustomersByMonth(conn, month=int(datetime.today().strftime('%m')), year=i
 
     customers = []  
     for item in data:
-        customers.append(Customer(item[1], item[3], item[4], item[6], item[7], item[5], item[2], item[0], item[8]))
+        customers.append(Customer(item[1], item[3], item[4], item[6], item[7], item[5], item[2], item[0], item[8], item[9], item[10]))
     
     return customers
     
@@ -281,7 +283,7 @@ def GetCustomersByRoomID(conn, roomID):
         return None
     
     cur = conn.cursor()
-    cur.execute(f'SELECT CustomerID, CustomerName, People, CheckIn, CheckOut, PricePerNight, RoomID, BookingType, Comments FROM customers WHERE RoomID = {roomID} ORDER BY CheckIn')
+    cur.execute(f'SELECT CustomerID, CustomerName, People, CheckIn, CheckOut, PricePerNight, RoomID, BookingType, Comments, NumberOfStayNights, TotalPrice FROM customers WHERE RoomID = {roomID} ORDER BY CheckIn')
     temp = cur.fetchall()
     
     if not temp:
@@ -297,7 +299,7 @@ def GetCustomersByRoomID(conn, roomID):
     
     customers = []  
     for item in data:
-        customers.append(Customer(item[1], item[3], item[4], item[6], item[7], item[5], item[2], item[0], item[8]))
+        customers.append(Customer(item[1], item[3], item[4], item[6], item[7], item[5], item[2], item[0], item[8], item[9], item[10]))
         
     return customers
 

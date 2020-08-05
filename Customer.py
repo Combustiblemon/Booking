@@ -2,7 +2,7 @@
 class Customer:
     """Class that contains all the details of a customer
     """
-    def __init__(self, Name, CheckIn, CheckOut, RoomID, BookingType, PricePerNight=0.0, People=0, CustomerID=-1, Comments=" "):
+    def __init__(self, Name, CheckIn, CheckOut, RoomID, BookingType, PricePerNight=0.0, People=0, CustomerID=-1, Comments=" ", NumberOfStayNights=1, TotalPrice=0.0):
         """
         :param Name [string]: The name of the customer
         :param CheckIn [datetime object]: The date of the check in
@@ -22,12 +22,11 @@ class Customer:
         self.RoomID = RoomID
         self.BookingType = BookingType
         self.Comments = Comments
-        delta = CheckOut - CheckIn
-        self.NumberOfStayNights = delta.days - 1
-        self.TotalPrice = delta.days * PricePerNight
+        self.NumberOfStayNights = NumberOfStayNights  # delta.days - 1
+        self.TotalPrice = TotalPrice  # (delta.days - 1) * PricePerNight
         
     def GetSQLFormatedDataForInsertion(self):
-        return [self.Name, self.People, self.CheckIn, self.CheckOut, self.PricePerNight, self.RoomID, self.BookingType, self.Comments]
+        return [self.Name, self.People, self.CheckIn, self.CheckOut, self.PricePerNight, self.RoomID, self.BookingType, self.Comments, self.NumberOfStayNights, self.TotalPrice]
     
     def __str__(self):
         string = f"""Customer Name: {self.Name}
