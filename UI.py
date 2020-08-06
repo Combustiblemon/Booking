@@ -112,7 +112,7 @@ class MainWindow(QtWidgets.QMainWindow):
             for item in data:
                 try:
                     row = rooms.index(item.RoomID)  # find the row by searching the room list
-                    column = item.CheckIn.day  # starting column is the check in day
+                    column = item.CheckIn.day - 1  # starting column is the check in day
                     span = item.NumberOfStayNights  # how many cells to merge based on the stay days
                     if item.CheckIn.month < (self.monthSelection.currentIndex() + 1):  # if the CheckIn date is on a previous month calculate difference
                         column = 0
@@ -123,7 +123,7 @@ class MainWindow(QtWidgets.QMainWindow):
                     temp = self.tableWidget.item(row, column)  # access the item just created
                     temp.setBackground(QColor(dictionary[f"{item.BookingType}"][1][0], dictionary[f"{item.BookingType}"][1][1], dictionary[f"{item.BookingType}"][1][2], alpha=150))  # set the background color of the item based on the dictionary
                     temp.setData(1, item.CustomerID)  # set the metadata of the item to the CustomerID
-                    self.tableWidget.setSpan(row, column, 1, span)  # merge the cells
+                    self.tableWidget.setSpan(row, column, 1, span + 1)  # merge the cells
                 except ValueError:
                     pass
                     
