@@ -123,7 +123,7 @@ class MainWindow(QtWidgets.QMainWindow):
                     temp = self.tableWidget.item(row, column)  # access the item just created
                     temp.setBackground(QColor(dictionary[f"{item.BookingType}"][1][0], dictionary[f"{item.BookingType}"][1][1], dictionary[f"{item.BookingType}"][1][2], alpha=150))  # set the background color of the item based on the dictionary
                     temp.setData(1, item.CustomerID)  # set the metadata of the item to the CustomerID
-                    self.tableWidget.setSpan(row, column, 1, span + 1)  # merge the cells
+                    self.tableWidget.setSpan(row, column, 1, span)  # merge the cells
                 except ValueError:
                     pass
                     
@@ -321,6 +321,7 @@ class CustomerDataWindow(QtWidgets.QDialog):
     def GetData(self):
         if self.exec_() == QDialog.Accepted:
             delta = self.checkOutInput.date().toPyDate() - self.checkInInput.date().toPyDate()
+            numberOfNights = delta.days
             return Customer(self.nameinput.text(),
                             self.checkInInput.date().toPyDate(), 
                             self.checkOutInput.date().toPyDate(), 
@@ -329,8 +330,8 @@ class CustomerDataWindow(QtWidgets.QDialog):
                             self.pricePerNightInput.value(),
                             self.peopleInput.value(),
                             Comments=self.commentInput.toPlainText(),
-                            NumberOfStayNights=delta.days - 1,
-                            TotalPrice=(delta.days - 1) * self.pricePerNightInput.value())
+                            NumberOfStayNights=numberOfNights,
+                            TotalPrice=(numberOfNights) * self.pricePerNightInput.value())
             
 
 class AddRoomWindow(QtWidgets.QDialog):
