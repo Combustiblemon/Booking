@@ -142,7 +142,11 @@ class MainWindow(QtWidgets.QMainWindow):
             edited = window.exec___()
             
             if edited:
+                conn = DB.CreateConnection()
+                rooms = DB.GetRoomsByType(conn, self.roomTypeSelection.currentIndex())
+                conn.close()
                 self.UpdateTableData()
+                self.tableWidget.scrollToItem(self.tableWidget.item(rooms.index(CustomerInfo.RoomID), CustomerInfo.CheckIn.day - 1))
         except AttributeError:
             return
     
@@ -153,8 +157,10 @@ class MainWindow(QtWidgets.QMainWindow):
         if data:
             conn = DB.CreateConnection()
             DB.AddCustomer(conn, data)
+            rooms = DB.GetRoomsByType(conn, self.roomTypeSelection.currentIndex())
             conn.close()
             self.UpdateTableData()
+            self.tableWidget.scrollToItem(self.tableWidget.item(rooms.index(data.RoomID), data.CheckIn.day - 1))
     
     def DeleteBookingPressed(self):
         try:
