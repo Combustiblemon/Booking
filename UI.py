@@ -35,7 +35,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.SetTableStyle()
         
         self.monthSelection = self.findChild(QtWidgets.QComboBox, 'monthSelection')
-        self.monthSelection.setCurrentIndex(int(datetime.today().strftime('%m')) - 1)
+        self.monthSelection.setCurrentIndex(datetime.today().month - 1)
         
         self.yearSelection = self.findChild(QtWidgets.QDateEdit, 'yearSelection')
         self.yearSelection.setDate(datetime.today())

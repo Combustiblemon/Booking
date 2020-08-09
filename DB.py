@@ -138,7 +138,7 @@ def DeleteCustomer(conn, CustomerID):
     return cur.lastrowid
     
 
-def GetCustomer(conn, name, year=int(datetime.today().strftime('%Y'))):
+def GetCustomer(conn, name, year=datetime.today().year):
     """
 
         :param conn: The database connection object
@@ -222,7 +222,7 @@ def GetCustomerIDByName(conn, name, roomID):
     
     return customerID
 
-def GetCustomersByMonth(conn, month=int(datetime.today().strftime('%m')), year=int(datetime.today().strftime('%Y')), roomType=0):
+def GetCustomersByMonth(conn, month=datetime.today().month, year=datetime.today().year, roomType=0):
     """Returns all the customers of the given month and roomType. Defaults to getting all the data per month
 
     :param conn: The database connection object
@@ -303,12 +303,14 @@ def GetCustomersByRoomID(conn, roomID):
         
     return customers
 
-def GetRoomOccupiedDates(conn, roomID):
+def GetRoomOccupiedDates(conn, roomID, year=datetime.today().year):
     """Returns the dates the room is occupied
 
     Args:
         :param conn: The database connection object
         :param roomID: The ID of the room
+        :param month: The month to get the dates for. Defaults to current
+        :param year: The year to get the date for. Defaults to current
         
         :return: List of dates the room is occupied
     """
@@ -317,7 +319,7 @@ def GetRoomOccupiedDates(conn, roomID):
         return None
     
     cur = conn.cursor()
-    cur.execute(f'SELECT CheckIn, CheckOut FROM customers WHERE RoomID = {roomID} ORDER BY CheckIn')
+    cur.execute(f'SELECT CheckIn, CheckOut FROM customers WHERE RoomID = {roomID} AND (CheckIn LIKE "{year}%" OR CheckOut LIKE "{year}%") ORDER BY CheckIn')
     Temp = cur.fetchall()
     
     if not Temp:

@@ -61,7 +61,7 @@ months = {'1': 31,
           '12': 31}
 
 # if the year is a leap year add a day to february
-if calendar.isleap(int(datetime.today().strftime('%Y'))):
+if calendar.isleap(datetime.today().year):
     months['2'] = 29
 
 # if the application loaded correctly continue, otherwise display a message
