@@ -36,6 +36,7 @@ class MainWindow(QtWidgets.QMainWindow):
         
         self.monthSelection = self.findChild(QtWidgets.QComboBox, 'monthSelection')
         self.monthSelection.setCurrentIndex(datetime.today().month - 1)
+        self.currentMonth = datetime.today().month - 1
         
         self.yearSelection = self.findChild(QtWidgets.QDateEdit, 'yearSelection')
         self.yearSelection.setDate(datetime.today())
@@ -83,30 +84,36 @@ class MainWindow(QtWidgets.QMainWindow):
         # get the customer data for the current month
         data = DB.GetCustomersByMonth(conn, self.monthSelection.currentIndex() + 1, self.yearSelection.date().year(), self.roomTypeSelection.currentIndex())
         
+        # get the rooms based on the room type
+        rooms = DB.GetRoomsByType(conn, self.roomTypeSelection.currentIndex())
+        
         #
         if self.roomTypeSelection.currentIndex() == 0:
             rowNumber = DB.GetRoomNumber(conn)
         else:
             rowNumber = DB.GetRoomNumber(conn, self.roomTypeSelection.currentIndex())
-        
-        
-        # set the number of rows based on the selected roomtype
-        self.tableWidget.setRowCount(0)
-        
-        # get the rooms based on the room type
-        rooms = DB.GetRoomsByType(conn, self.roomTypeSelection.currentIndex())
         conn.close()
+        
+        currentRow = self.tableWidget.currentRow()
+        currentColumn = self.tableWidget.currentColumn()
         
         # set up the table rows
         try:
+            # set the number of rows based on the selected roomtype
+            self.tableWidget.setRowCount(0)
+        
             for item in rooms:
                 rowPosition = self.tableWidget.rowCount()
                 self.tableWidget.insertRow(rowPosition)
                 self.tableWidget.setVerticalHeaderItem(rowPosition, QtWidgets.QTableWidgetItem(str(item)))
+            
+            self.tableWidget.setCurrentCell(currentRow, currentColumn)
         
             # set the number of columns based on the selected month
-            self.tableWidget.setColumnCount(0)
-            self.tableWidget.setColumnCount(self.months[f'{self.monthSelection.currentIndex() + 1}'])
+            if self.currentMonth != (self.monthSelection.currentIndex() + 1):
+                self.tableWidget.setColumnCount(0)
+                self.tableWidget.setColumnCount(self.months[f'{self.monthSelection.currentIndex() + 1}'])
+                self.currentMonth = self.monthSelection.currentIndex() + 1
             
             
             for item in data:
@@ -146,7 +153,6 @@ class MainWindow(QtWidgets.QMainWindow):
                 rooms = DB.GetRoomsByType(conn, self.roomTypeSelection.currentIndex())
                 conn.close()
                 self.UpdateTableData()
-                self.tableWidget.scrollToItem(self.tableWidget.item(rooms.index(CustomerInfo.RoomID), CustomerInfo.CheckIn.day - 1))
         except AttributeError:
             return
     
