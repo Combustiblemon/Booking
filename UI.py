@@ -253,8 +253,9 @@ class CustomerInfoWindow(QtWidgets.QDialog):
     
     def GetRoomType(self, roomID):
         conn = DB.CreateConnection()
-        return roomDictionary[f'{DB.GetRoomType(conn, roomID)}']
+        a = roomDictionary[f'{DB.GetRoomType(conn, roomID)}']
         conn.close()
+        return a
         
     def exec___(self):
         temp = self.exec_()

@@ -4,7 +4,8 @@ import calendar
 import configparser
 from shutil import copyfile
 from PyQt5 import QtWidgets
-from UI import MainWindow, LoadingWindow, ErrorWindow
+from PyQt5.QtWidgets import QMessageBox
+from UI import MainWindow, LoadingWindow, ErrorWindow, MessageBox
 from datetime import date, datetime, timedelta
 from dotenv import load_dotenv
 from DB import CreateDatabase
@@ -43,8 +44,7 @@ if (datetime.strptime(config['DATABASE']['last_backup'], '%Y-%m-%d') + timedelta
             correctLoad = 1
     except Exception as e:
         print(e)
-        errorW1 = ErrorWindow(f'Αποτυχία εγγραφής αρχείου.\n{e}')
-        errorW1.show()
+        MessageBox(title='Error', text='<p style="text-align:left;font-size:18px">Αποτυχία εγγραφής αρχείου', buttons=QMessageBox.Ok)
 
 # setup the month to date dictionary
 months = {'1': 31,
@@ -76,6 +76,5 @@ if correctLoad:
         EG.show()
     app.exec_()
 else:
-    errorW = ErrorWindow('Αποτυχία φόρτωσης προγράμματος')
+    MessageBox(title='Error', text='<p style="text-align:left;font-size:18px">Αποτυχία φόρτωσης προγράμματος', buttons=QMessageBox.Ok)
     loadingW.close()
-    app.exec_()
