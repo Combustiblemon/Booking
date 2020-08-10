@@ -419,12 +419,14 @@ class ErrorWindow(QtWidgets.QDialog):
         # Load the main UI file
         uic.loadUi('./files/UI/ErrorWindow.ui', self)
         
+        self.setWindowFlags(QtCore.Qt.WindowSystemMenuHint | QtCore.Qt.WindowTitleHint | QtCore.Qt.WindowCloseButtonHint | QtCore.Qt.WindowStaysOnTopHint)
+        
         self.setWindowTitle(title)
         
         self.label = self.findChild(QtWidgets.QLabel, 'label')
         self.label.setText(text)
 
-def MessageBox(title='Έξοδος', text="Είστε σίγουροι ότι θέλετε να κλείσετε το πρόγραμμα;"):
+def MessageBox(title='Έξοδος', text="Είστε σίγουροι ότι θέλετε να κλείσετε το πρόγραμμα;", buttons=QMessageBox.Yes | QMessageBox.Cancel):
     """
     :param title: Window title
     :param text: Window Text
@@ -432,7 +434,7 @@ def MessageBox(title='Έξοδος', text="Είστε σίγουροι ότι θ
     msgBox = QMessageBox()
     msgBox.setWindowTitle(title)
     msgBox.setText(text)
-    msgBox.setStandardButtons(QMessageBox.Yes | QMessageBox.Cancel)
+    msgBox.setStandardButtons(buttons)
     msgBox = msgBox.exec()
 
     return msgBox
