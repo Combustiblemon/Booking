@@ -312,9 +312,13 @@ class CustomerDataWindow(QtWidgets.QDialog):
         
         self.checkInInput = self.findChild(QtWidgets.QDateEdit, 'checkInInput')
         self.checkInInput.setDate(datetime.today())
+        self.checkInInput.dateChanged.connect(self.CheckInChanged)
         
         self.checkOutInput = self.findChild(QtWidgets.QDateEdit, 'checkOutInput')
         self.checkOutInput.setDate(datetime.today() + timedelta(5))
+        self.newDate = QtCore.QDate.currentDate()
+        self.checkOutInput.dateChanged.connect(self.CheckOutChanged)
+
         
         self.commentInput = self.findChild(QtWidgets.QTextEdit, 'commentInput')
         
@@ -353,6 +357,16 @@ class CustomerDataWindow(QtWidgets.QDialog):
         
         return itemList
     
+    def CheckInChanged(self, date):
+        self.checkOutInput.setDate(date.addDays(5))
+    
+    def CheckOutChanged(self):
+        if self.newDate <= self.checkInInput.date():
+            self.newDate = self.checkInInput.date().addDays(5)
+            self.checkOutInput.setDate(self.checkInInput.date().addDays(5))
+            MessageBox(title='Προσοχή', text='<p style="text-align:left;font-size:18px"><b>Ο αριθμός διανυκτερεύσεων δεν μπορεί να είναι μικρότερος απο 1', buttons=QMessageBox.Ok) 
+        return
+
     def GetData(self):
         if self.exec_() == QDialog.Accepted:
             delta = self.checkOutInput.date().toPyDate() - self.checkInInput.date().toPyDate()
@@ -446,8 +460,6 @@ class ErrorWindow(QtWidgets.QDialog):
         super(ErrorWindow, self).__init__()
         # Load the main UI file
         uic.loadUi('./files/UI/ErrorWindow.ui', self)
-        
-        self.setWindowFlags(QtCore.Qt.WindowSystemMenuHint | QtCore.Qt.WindowTitleHint | QtCore.Qt.WindowCloseButtonHint | QtCore.Qt.WindowStaysOnTopHint)
         
         self.setWindowTitle(title)
         
