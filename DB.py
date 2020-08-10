@@ -303,7 +303,7 @@ def GetCustomersByRoomID(conn, roomID):
         
     return customers
 
-def GetRoomOccupiedDates(conn, roomID, year=datetime.today().year):
+def GetRoomOccupiedDates(conn, roomID, year=datetime.today().year, exclude=[]):
     """Returns the dates the room is occupied
 
     Args:
@@ -311,6 +311,7 @@ def GetRoomOccupiedDates(conn, roomID, year=datetime.today().year):
         :param roomID: The ID of the room
         :param month: The month to get the dates for. Defaults to current
         :param year: The year to get the date for. Defaults to current
+        :param exclude [Checkin, CheckOut]: The dates to exclude.  
         
         :return: List of dates the room is occupied
     """
@@ -327,6 +328,12 @@ def GetRoomOccupiedDates(conn, roomID, year=datetime.today().year):
     
     # convert Tuple Temp to list
     datesTemp = [list(i) for i in Temp]
+    print(exclude)
+    print(datesTemp)
+    try:
+        datesTemp.remove([exclude[0].strftime('%Y-%m-%d'), exclude[1].strftime('%Y-%m-%d')])
+    except Exception as e:
+        print(e)
     
     # Congregate dates into chunks
     dates = [[datesTemp[0][0], datesTemp[0][1]]]
