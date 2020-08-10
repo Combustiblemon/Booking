@@ -156,12 +156,20 @@ class MainWindow(QtWidgets.QMainWindow):
         
         if data:
             conn = DB.CreateConnection()
+            occupiedDates = DB.GetRoomOccupiedDates(conn, data.RoomID, data.CheckIn.year)
+            
+            for item in occupiedDates:
+                if not (((data.CheckIn - item[0]).days < 0 and (data.CheckOut - item[0]).days <= 0) or ((data.CheckIn - item[1]).days >= 0 and (data.CheckOut - item[1]).days > 0)):
+                    conn.close()
+                    MessageBox('Σφάλμα', f'<p style="text-align:center;font-size:18px"><b>Ουπς...</p><p style="font-size:18px">Οι ημερομηνίες <b>"{data.CheckIn} - {data.CheckOut}"</b> συμπίπτουν με άλλη κράτηση.</p>', QMessageBox.Ok)
+                    return
+            
             DB.AddCustomer(conn, data)
             rooms = DB.GetRoomsByType(conn, self.roomTypeSelection.currentIndex())
             conn.close()
+
             self.UpdateTableData()
-            self.tableWidget.scrollToItem(self.tableWidget.item(rooms.index(data.RoomID), data.CheckIn.day - 1))
-    
+
     def DeleteBookingPressed(self):
         try:
             item = self.tableWidget.currentItem()
@@ -173,7 +181,6 @@ class MainWindow(QtWidgets.QMainWindow):
                 conn.close()
                 self.UpdateTableData()
         except AttributeError as e:
-            print(e)
             return
     
     def addRoomPressed(self):
@@ -240,8 +247,23 @@ class CustomerInfoWindow(QtWidgets.QDialog):
         
         try:
             if data != customerInfo:  # if the data from the edit window are different from before, update the database and set the edited flag to 1
-                self.SetLabelText(data)
                 conn = DB.CreateConnection()
+                
+                # Check if the new date is equal or within the old date, if it isn't go into the loop
+                if not ((data.CheckIn >= customerInfo.CheckIn) and (data.CheckOut <= customerInfo.CheckOut)):
+                    occupiedDates = DB.GetRoomOccupiedDates(conn, data.RoomID, data.CheckIn.year, [customerInfo.CheckIn, customerInfo.CheckOut])
+                    
+                    for item in occupiedDates:
+                        # Check if the new date is between the occupied dates
+                        if not (((data.CheckIn - item[0]).days < 0 and (data.CheckOut - item[0]).days < 0) or ((data.CheckIn - item[1]).days >= 0 and (data.CheckOut - item[1]).days >= 0)):
+                            # print(occupiedDates)
+                            conn.close()
+                            MessageBox('Σφάλμα', f'<p style="text-align:center;font-size:18px"><b>Ουπς...</p><p style="font-size:18px">Οι ημερομηνίες <b>"{data.CheckIn} - {data.CheckOut}"</b> συμπίπτουν με άλλη κράτηση.</p>', QMessageBox.Ok)
+                            del occupiedDates
+                            return
+                    del occupiedDates
+                
+                self.SetLabelText(data)
                 DB.UpdateCustomer(conn, customerInfo.CustomerID, data)
                 conn.close()
                 self.edited = 1
