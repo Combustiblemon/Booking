@@ -328,8 +328,7 @@ def GetRoomOccupiedDates(conn, roomID, year=datetime.today().year, exclude=[]):
     
     # convert Tuple Temp to list
     datesTemp = [list(i) for i in Temp]
-    print(exclude)
-    print(datesTemp)
+    
     try:
         datesTemp.remove([exclude[0].strftime('%Y-%m-%d'), exclude[1].strftime('%Y-%m-%d')])
     except Exception as e:
