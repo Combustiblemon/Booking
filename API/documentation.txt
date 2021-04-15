@@ -1,0 +1,13 @@
+*PLACEHOLDER*
+fiters: list of tuples, each tuple is an operation. eg:
+        tuple1 AND tuple2 AND tuple3 ...
+        tuples should be:
+        (parameter_name: str, value: any, operation: str)
+    
+        posible operations:
+            eq -> ==
+            lt -> <
+            gt -> >
+            ge -> >=
+            le -> <=
+            nt -> !=
