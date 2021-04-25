@@ -1,0 +1,3 @@
+create logger
+
+pickle -> serialize/desirialize objects
