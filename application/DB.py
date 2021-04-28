@@ -6,6 +6,8 @@ from configHandler import config
 import UI
 import logging
 import os
+import pathlib
+
 
 db_path = ":memory:"
 
@@ -15,7 +17,8 @@ def CreateDatabase(path:str = None):
     
     if path:
         global db_path 
-        db_path = path
+        db_path = f"{pathlib.Path(__file__).parent.absolute()}\{path}"
+        print(db_path)
         
     conn = CreateConnection()
     cur = conn.cursor()
@@ -66,6 +69,7 @@ def CreateConnection():
         conn = sqlite3.connect(db_path)
     except Error as e:
         DBError(e)
+        print(e)
 
     return conn
 
