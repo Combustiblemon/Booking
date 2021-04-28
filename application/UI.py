@@ -81,20 +81,17 @@ class MainWindow(QtWidgets.QMainWindow):
                                            "}")
             
     def UpdateTableData(self):
-        # Create connection to database
-        conn = DB.CreateConnection()
         # get the customer data for the current month
-        data = DB.GetCustomersByMonth(conn, self.monthSelection.currentIndex() + 1, self.yearSelection.date().year(), self.roomTypeSelection.currentIndex())
+        data = DB.GetCustomersByMonth(self.monthSelection.currentIndex() + 1, self.yearSelection.date().year(), self.roomTypeSelection.currentIndex())
         
         # get the rooms based on the room type
-        rooms = DB.GetRoomsByType(conn, self.roomTypeSelection.currentIndex())
+        rooms = DB.GetRoomsByType(self.roomTypeSelection.currentIndex())
         
         #
         if self.roomTypeSelection.currentIndex() == 0:
-            rowNumber = DB.GetRoomNumber(conn)
+            rowNumber = DB.GetRoomNumber()
         else:
-            rowNumber = DB.GetRoomNumber(conn, self.roomTypeSelection.currentIndex())
-        conn.close()
+            rowNumber = DB.GetRoomNumber(self.roomTypeSelection.currentIndex())
         
         currentRow = self.tableWidget.currentRow()
         currentColumn = self.tableWidget.currentColumn()
@@ -143,17 +140,13 @@ class MainWindow(QtWidgets.QMainWindow):
         
     def cellDoubleClicked(self, row, column):
         try:
-            conn = DB.CreateConnection()
-            CustomerInfo = DB.GetCustomerByID(conn, self.tableWidget.item(row, column).data(1))
-            conn.close()
+            CustomerInfo = DB.GetCustomerByID(self.tableWidget.item(row, column).data(1))
             
             window = CustomerInfoWindow(CustomerInfo)
             edited = window.exec___()
             
             if edited:
-                conn = DB.CreateConnection()
-                rooms = DB.GetRoomsByType(conn, self.roomTypeSelection.currentIndex())
-                conn.close()
+                rooms = DB.GetRoomsByType(self.roomTypeSelection.currentIndex())
                 self.UpdateTableData()
         except AttributeError:
             pass
@@ -163,20 +156,17 @@ class MainWindow(QtWidgets.QMainWindow):
         data = window.GetData()
         
         if data:
-            conn = DB.CreateConnection()
-            occupiedDates = DB.GetRoomOccupiedDates(conn, data.RoomID, data.CheckIn.year)
+            occupiedDates = DB.GetRoomOccupiedDates(data.RoomID, data.CheckIn.year)
             try:
                 for item in occupiedDates:
                     if not (((data.CheckIn - item[0]).days < 0 and (data.CheckOut - item[0]).days <= 0) or ((data.CheckIn - item[1]).days >= 0 and (data.CheckOut - item[1]).days > 0)):
-                        conn.close()
                         MessageBox('Σφάλμα', f'<p style="text-align:center;font-size:18px"><b>Ουπς...</p><p style="font-size:18px">Οι ημερομηνίες <b>"{data.CheckIn} - {data.CheckOut}"</b> συμπίπτουν με άλλη κράτηση.</p>', QMessageBox.Ok)
                         return
             except TypeError:
                 pass
             
-            DB.AddCustomer(conn, data)
-            rooms = DB.GetRoomsByType(conn, self.roomTypeSelection.currentIndex())
-            conn.close()
+            DB.AddCustomer(data)
+            rooms = DB.GetRoomsByType(self.roomTypeSelection.currentIndex())
 
             self.UpdateTableData()
 
@@ -186,9 +176,7 @@ class MainWindow(QtWidgets.QMainWindow):
             text = f"Είστε σίγουροι ότι θέλετε να διαγράψετε την κράτηση;\n\n{item.text()}"
             test = MessageBox("Προσοχή", text)
             if test == QMessageBox.Yes:
-                conn = DB.CreateConnection()
-                DB.DeleteCustomer(conn, item.data(1))
-                conn.close()
+                DB.DeleteCustomer(item.data(1))
                 self.UpdateTableData()
         except AttributeError as e:
             pass
@@ -258,25 +246,22 @@ class CustomerInfoWindow(QtWidgets.QDialog):
         
         try:
             if data != customerInfo:  # if the data from the edit window are different from before, update the database and set the edited flag to 1
-                conn = DB.CreateConnection()
                 
                 # Check if the new date is equal or within the old date, if it isn't go into the loop
                 if not ((data.CheckIn >= customerInfo.CheckIn) and (data.CheckOut <= customerInfo.CheckOut)):
-                    occupiedDates = DB.GetRoomOccupiedDates(conn, data.RoomID, data.CheckIn.year, [customerInfo.CheckIn, customerInfo.CheckOut])
+                    occupiedDates = DB.GetRoomOccupiedDates(data.RoomID, data.CheckIn.year, [customerInfo.CheckIn, customerInfo.CheckOut])
                     if occupiedDates:
                         for item in occupiedDates:
                             # Check if the new date is between the occupied dates
                             if not (((data.CheckIn - item[0]).days < 0 and (data.CheckOut - item[0]).days < 0) or ((data.CheckIn - item[1]).days >= 0 and (data.CheckOut - item[1]).days >= 0)):
                                 # print(occupiedDates)
-                                conn.close()
                                 MessageBox('Σφάλμα', f'<p style="text-align:center;font-size:18px"><b>Ουπς...</p><p style="font-size:18px">Οι ημερομηνίες <b>"{data.CheckIn} - {data.CheckOut}"</b> συμπίπτουν με άλλη κράτηση.</p>', QMessageBox.Ok)
                                 del occupiedDates
                                 return
                         del occupiedDates
                 
                 self.SetLabelText(data)
-                DB.UpdateCustomer(conn, customerInfo.CustomerID, data)
-                conn.close()
+                DB.UpdateCustomer(customerInfo.CustomerID, data)
                 self.edited = 1
         except AttributeError as e:
             pass
@@ -285,9 +270,7 @@ class CustomerInfoWindow(QtWidgets.QDialog):
         self.close()
     
     def GetRoomType(self, roomID):
-        conn = DB.CreateConnection()
-        a = roomDictionary[f'{DB.GetRoomType(conn, roomID)}']
-        conn.close()
+        a = roomDictionary[f'{DB.GetRoomType(roomID)}']
         return a
         
     def exec___(self):
@@ -409,9 +392,7 @@ class AddRoomWindow(QtWidgets.QDialog):
            
     def exec__(self):
         if self.exec_() == QDialog.Accepted:
-            conn = DB.CreateConnection()
-            DB.AddRoom(conn, self.roomIDInput.value(), self.roomTypeInput.currentIndex() + 1)
-            conn.close()
+            DB.AddRoom(self.roomIDInput.value(), self.roomTypeInput.currentIndex() + 1)
             return 1
         
 
@@ -431,9 +412,8 @@ class RemoveRoomWindow(QtWidgets.QDialog):
         self.listWidget.setCurrentRow(-1)
         
     def GetRooms(self):
-        conn = DB.CreateConnection()
-        rooms = DB.GetRoomsByType(conn)
-        conn.close()
+        rooms = DB.GetRoomsByType()
+        
         
         if rooms:
             rooms = [str(i) for i in rooms]
@@ -448,9 +428,8 @@ class RemoveRoomWindow(QtWidgets.QDialog):
             if item:
                 msg = MessageBox('Προσοχή', f'Είστε σίγουροι ότι θέλετε να διαγράψετε το δωμάτιο "{item.text()}";')
                 if msg == QMessageBox.Yes:
-                    conn = DB.CreateConnection()
-                    DB.DeleteRoom(conn, int(item.text()))
-                    conn.close()
+                    DB.DeleteRoom(int(item.text()))
+                    
                     
                     return 1
         

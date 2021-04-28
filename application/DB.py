@@ -90,13 +90,15 @@ def ConvertStringToDate(dateString):
         logging.exception("exception")
         return dateString
 
-def AddCustomer(conn, customer):
+def AddCustomer(customer):
     """Add the customer Data to the DB
 
     Args:
-        :param conn: The database connection object
         :param customer: The customer object
     """
+    
+    conn = CreateConnection()
+    
     if conn is None:
         DBError()
         return None
@@ -106,17 +108,18 @@ def AddCustomer(conn, customer):
     cur = conn.cursor()
     cur.execute(sql, customer.GetSQLFormatedDataForInsertion())
     conn.commit()
+    conn.close()
 
     return cur.lastrowid
 
-def UpdateCustomer(conn, customerID, customer):
+def UpdateCustomer(customerID, customer: Customer):
     """Updates an existing customer in the database with new data
 
-    :param conn: The database connection object
     :param customerID: The ID of the customer to be updated
     :param customer: The customer object
     """
     
+    conn = CreateConnection()
     if conn is None:
         DBError()
         return None
@@ -128,16 +131,17 @@ def UpdateCustomer(conn, customerID, customer):
     cur = conn.cursor()
     cur.execute(sql, data)
     conn.commit()
+    conn.close()
     
     return cur.lastrowid
 
-def DeleteCustomer(conn, CustomerID):
+def DeleteCustomer(CustomerID):
     """Deletes a customer
 
-    :param conn: The connection object
     :param CustomerID: The ID of the customer to delete
     """
     
+    conn = CreateConnection()
     if conn is None:
         DBError()
         return None
@@ -145,24 +149,27 @@ def DeleteCustomer(conn, CustomerID):
     cur = conn.cursor()
     cur.execute('DELETE FROM customers WHERE CustomerID = ?;', (CustomerID,))
     conn.commit()
+    conn.close()
     
     return cur.lastrowid
     
 
-def GetCustomer(conn, name, year=datetime.today().year):
+def GetCustomer(name: str, year=datetime.today().year):
     """
 
-        :param conn: The database connection object
         :param name: The name of the customer to get the data of
         :param year: The date of the check in. defaults to current year
     """
+    
+    conn = CreateConnection()
     if conn is None:
         DBError()
         return None
     
     cur = conn.cursor()
-    cur.execute(f'SELECT CustomerID, CustomerName, People, CheckIn, CheckOut, PricePerNight, RoomID, BookingType, Comments, NumberOfStayNights, TotalPrice FROM customers WHERE CustomerName = "{name}" AND CheckIn LIKE "{year}%"')
+    cur.execute(f'SELECT CustomerID, CustomerName, People, CheckIn, CheckOut, PricePerNight, RoomID, BookingType, Comments, NumberOfStayNights, TotalPrice FROM customers WHERE CustomerName = "{name.lower()}" AND CheckIn LIKE "{year}%"')
     temp = cur.fetchall()
+    conn.close()
     
     if not temp:
         return None
@@ -178,15 +185,17 @@ def GetCustomer(conn, name, year=datetime.today().year):
     customers = []  
     for item in data:
         customers.append(Customer(item[1], item[3], item[4], item[6], item[7], item[5], item[2], item[0], item[8], item[9], item[10]))
+    
         
     return customers
 
-def GetCustomerByID(conn, customerID):
+def GetCustomerByID(customerID):
     """
 
-        :param conn: The database connection object
         :param customerID: The ID of the customer
     """
+    
+    conn = CreateConnection()
     if conn is None:
         DBError()
         return None
@@ -194,6 +203,7 @@ def GetCustomerByID(conn, customerID):
     cur = conn.cursor()
     cur.execute(f'SELECT CustomerID, CustomerName, People, CheckIn, CheckOut, PricePerNight, RoomID, BookingType, Comments, NumberOfStayNights, TotalPrice FROM customers WHERE CustomerID = "{customerID}"')
     temp = cur.fetchall()
+    conn.close()
     
     if not temp:
         return None
@@ -207,22 +217,23 @@ def GetCustomerByID(conn, customerID):
         
     return Customer(data[0][1], data[0][3], data[0][4], data[0][6], data[0][7], data[0][5], data[0][2], data[0][0], data[0][8], data[0][9], data[0][10])
 
-def GetCustomerIDByName(conn, name, roomID):
+def GetCustomerIDByName(name: str):
     """Returns the CustomerID of a given name
 
     Args:
-        :param conn: The database connection object
         :param name: The name of the customer to find the ID
-        :param roomID: The ID of the room
         :return: List of the CustomerIDs found or None
     """
+    
+    conn = CreateConnection()
     if conn is None:
         DBError()
         return None
     
     cur = conn.cursor()
-    cur.execute(f'SELECT CustomerID FROM customers WHERE CustomerName = "{name}"')
+    cur.execute(f'SELECT CustomerID FROM customers WHERE CustomerName = "{name.lower()}"')
     temp = cur.fetchall()
+    conn.close()
     
     if not temp:
         return None
@@ -233,14 +244,14 @@ def GetCustomerIDByName(conn, name, roomID):
     
     return customerID
 
-def GetCustomersByMonth(conn, month=datetime.today().month, year=datetime.today().year, roomType=0):
+def GetCustomersByMonth(month=datetime.today().month, year=datetime.today().year, roomType=0):
     """Returns all the customers of the given month and roomType. Defaults to getting all the data per month
 
-    :param conn: The database connection object
     :param month: The month to get the data. Defaults to the current month
     :param year: The year to get the data. Default to current year
     :param roomType: The ID of the type of room
     """
+    conn = CreateConnection()
     if conn is None:
         DBError()
         return None
@@ -262,6 +273,7 @@ def GetCustomersByMonth(conn, month=datetime.today().month, year=datetime.today(
     cur = conn.cursor()
     cur.execute(sql)
     temp = cur.fetchall()
+    conn.close()
     
     if not temp:
         return None
@@ -280,15 +292,16 @@ def GetCustomersByMonth(conn, month=datetime.today().month, year=datetime.today(
     
     return customers
     
-def GetCustomersByRoomID(conn, roomID):
+def GetCustomersByRoomID(roomID):
     """Returns all the customers of the given roomID
 
     Args:
-        :param conn: The database connection object
         :param roomID: The ID of the room to get the customers
         
         :return: List of the customers or None
     """
+    
+    conn = CreateConnection()
     if conn is None:
         DBError()
         return None
@@ -296,6 +309,7 @@ def GetCustomersByRoomID(conn, roomID):
     cur = conn.cursor()
     cur.execute(f'SELECT CustomerID, CustomerName, People, CheckIn, CheckOut, PricePerNight, RoomID, BookingType, Comments, NumberOfStayNights, TotalPrice FROM customers WHERE RoomID = {roomID} ORDER BY CheckIn')
     temp = cur.fetchall()
+    conn.close()
     
     if not temp:
         return None
@@ -314,11 +328,10 @@ def GetCustomersByRoomID(conn, roomID):
         
     return customers
 
-def GetRoomOccupiedDates(conn, roomID, year=datetime.today().year, exclude=[]):
+def GetRoomOccupiedDates(roomID, year=datetime.today().year, exclude=[]):
     """Returns the dates the room is occupied
 
     Args:
-        :param conn: The database connection object
         :param roomID: The ID of the room
         :param month: The month to get the dates for. Defaults to current
         :param year: The year to get the date for. Defaults to current
@@ -326,6 +339,8 @@ def GetRoomOccupiedDates(conn, roomID, year=datetime.today().year, exclude=[]):
         
         :return: List of dates the room is occupied
     """
+    
+    conn = CreateConnection()
     if conn is None:
         DBError()
         return None
@@ -333,6 +348,7 @@ def GetRoomOccupiedDates(conn, roomID, year=datetime.today().year, exclude=[]):
     cur = conn.cursor()
     cur.execute(f'SELECT CheckIn, CheckOut FROM customers WHERE RoomID = {roomID} AND (CheckIn LIKE "{year}%" OR CheckOut LIKE "{year}%") ORDER BY CheckIn')
     Temp = cur.fetchall()
+    conn.close()
     
     if not Temp:
         return None
@@ -363,12 +379,14 @@ def GetRoomOccupiedDates(conn, roomID, year=datetime.today().year, exclude=[]):
     except IndexError:
         return None
 
-def GetRoomType(conn, roomID):
+def GetRoomType(roomID):
     """Returns the type of room for a given ID
 
     :param conn: The database connection object
     :param roomID: The ID of the room
     """
+    
+    conn = CreateConnection()
     if conn is None:
         DBError()
         return None
@@ -376,15 +394,17 @@ def GetRoomType(conn, roomID):
     cur = conn.cursor()
     cur.execute(f'SELECT RoomType FROM rooms WHERE RoomID = {roomID}')
     temp = cur.fetchall()
+    conn.close()
     
     return temp[0][0]
 
-def GetRoomNumber(conn, roomType=0):
+def GetRoomNumber(roomType=0):
     """Returns the number of rooms for a given type. By default returns the number of all rooms
 
-    :param conn: The dtabase connection object
     :param roomType [int]: The ID of the room type
     """
+    
+    conn = CreateConnection()
     if conn is None:
         DBError()
         return None
@@ -397,15 +417,17 @@ def GetRoomNumber(conn, roomType=0):
     cur = conn.cursor()
     cur.execute(sql)
     temp = cur.fetchall()
+    conn.close()
     
     return len(temp)
 
-def GetRoomsByType(conn, roomType=None):
+def GetRoomsByType(roomType:int = None):
     """Returns all the room IDs for the given room type. Defaults to returning all rooms
 
-    :param conn: The database connection object
     :param roomType [int]: The ID of the room type
     """
+    
+    conn = CreateConnection()
     if conn is None:
         DBError()
         return None
@@ -418,6 +440,7 @@ def GetRoomsByType(conn, roomType=None):
     cur = conn.cursor()
     cur.execute(sql)
     temp = cur.fetchall()
+    conn.close()
     
     data = []
     for item in temp:
@@ -425,13 +448,14 @@ def GetRoomsByType(conn, roomType=None):
     
     return tuple(data)
 
-def AddRoom(conn, roomID, roomType):
+def AddRoom(roomID, roomType):
     """Adds a new room to the database
 
-    :param conn: The database connection object
     :param roomID: The ID of the room
     :param roomType: The type of the room
     """
+    
+    conn = CreateConnection()
     if conn is None:
         DBError()
         return None
@@ -441,16 +465,18 @@ def AddRoom(conn, roomID, roomType):
     cur = conn.cursor()
     cur.execute(sql, (roomID, roomType))
     conn.commit()
+    conn.close()
     
     return cur.lastrowid
 
-def DeleteRoom(conn, roomID):
+def DeleteRoom(roomID):
     """Deletes a room from the database
 
     :param conn: The connection object
     :param roomID: The ID of the room to delete
     """
     
+    conn = CreateConnection()
     if conn is None:
         DBError()
         return None
@@ -458,5 +484,6 @@ def DeleteRoom(conn, roomID):
     cur = conn.cursor()
     cur.execute('DELETE FROM rooms WHERE RoomID = ?;', (roomID,))
     conn.commit()
+    conn.close()
     
     return cur.lastrowid
