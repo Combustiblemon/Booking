@@ -200,7 +200,7 @@ def echo():
 
 @bp.route('/api/rooms', methods=['PATCH', 'GET', 'PUT', 'DELETE'])
 @require_oauth('api')
-@marshal_with(resource_fields.room, envelope='rooms')
+#@marshal_with(resource_fields.room, envelope='rooms')
 def api_rooms():
     schemaRoom = RoomSchema()
     JSONdata = getJSONFromRequest(request)
@@ -251,7 +251,7 @@ def api_rooms():
             args = schemaRoom.loads(JSONdata)
             result = constructDBQuery(ROOM, args['filters']).all()
             
-            return getReturnObject(200, room=result) 
+            return jsonify([RoomSchema().dump(i) for i in result])
         
         except marshmallow.ValidationError as e:
             return getReturnObject(400, message=e)
@@ -285,7 +285,7 @@ def api_rooms():
 
 @bp.route('api/customers', methods=['PATCH', 'GET', 'PUT', 'DELETE'])
 @require_oauth('api')
-@marshal_with(resource_fields.customer, envelope='customers')
+#@marshal_with(resource_fields.customer)
 def api_customers():
     schemaCustomer = CustomerSchema()
     JSONdata = getJSONFromRequest(request)
@@ -369,8 +369,9 @@ def api_customers():
             args = schemaCustomer.loads(JSONdata)
             
             result = constructDBQuery(CUSTOMER, args['filters']).all()
-            
-            return getReturnObject(200, customer=result)
+            data = [CustomerSchema().dump(i) for i in result]
+            print(data)
+            return jsonify(data)
         
         except marshmallow.ValidationError as e:
             return getReturnObject(400, message=e)

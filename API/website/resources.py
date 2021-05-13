@@ -20,7 +20,7 @@ resource_fields_CUSTOMER = {
     'comment': fields.String(default=None),
     'stay_days_number': fields.Integer(default=None),
     'message': fields.String(default=None),
-    'customer': fields.String(default=None)
+    'customer': fields.String()
 }
 
 class ResourceFields():

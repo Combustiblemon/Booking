@@ -10,6 +10,8 @@ from UI import FilePath, MainWindow, LoadingWindow, ErrorWindow, MessageBox
 from datetime import date, datetime, timedelta
 from dotenv import load_dotenv
 import DB
+import urllib3
+urllib3.disable_warnings(urllib3.exceptions.SubjectAltNameWarning)
 load_dotenv()
 config = configHandler.config
 

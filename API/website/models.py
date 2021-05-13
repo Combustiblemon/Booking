@@ -1,3 +1,4 @@
+import json
 import time
 from typing import Iterable
 from flask_sqlalchemy import SQLAlchemy
@@ -7,7 +8,7 @@ from authlib.integrations.sqla_oauth2 import (
     OAuth2AuthorizationCodeMixin,
     OAuth2TokenMixin,
 )
-from marshmallow import fields
+from marshmallow import fields, ValidationError
 import marshmallow
 
 
@@ -83,6 +84,7 @@ class RoomSchema(ma.SQLAlchemySchema):
     class Meta:
         model = ROOM
         include_fk = True
+        manu = True
     
     room_id = fields.Integer()
     room_type = fields.Integer()
@@ -109,17 +111,21 @@ class CUSTOMER(db.Model):
     comment = db.Column(db.String(500), default='')
     stay_days_number = db.Column(db.Integer, nullable=False)
     
-    def __repr__(self):
-        return f"""(customer_id = {self.customer_id}, 
-    customer_name = {self.customer_name}, 
-    number_of_people = {self.number_of_people}, 
-    check_in = {self.check_in}, 
-    check_out = {self.check_out}, 
-    price_per_night = {self.price_per_night}, 
-    room_id = {self.room_id}, 
-    booking_type = {self.booking_type}, 
-    comment = {self.comment}, 
-    stay_days_number = {self.stay_days_number})"""
+    @property
+    def serialize(self):
+        return {
+            'customer_id': self.customer_id,
+            'customer_name': self.customer_name,
+            'number_of_people': self.number_of_people,
+            'check_in': self.check_in,
+            'check_out': self.check_out,
+            'price_per_night': self.price_per_night,
+            'room_id': self.room_id,
+            'booking_type': self.booking_type,
+            'comment': self.comment,
+            'stay_days_number': self.stay_days_number
+        }
+        
     
     def __dir__() -> Iterable[str]:
         return ['customer_id',
@@ -133,10 +139,16 @@ class CUSTOMER(db.Model):
                 'comment',
                 'stay_days_number']
 
+class StrListField(fields.Field):
+    def _deserialize(self, value, attr, data, **kwargs):
+        if isinstance(value, str) or isinstance(value, list):
+            return value
+        else:
+            raise ValidationError('Field should be either string or list')
 
 class CustomerSchema(ma.SQLAlchemySchema):
     class Meta:
-        model = CUSTOMER
+        model = CUSTOMER        
 
     customer_id = fields.Integer()
     customer_name = fields.Str()
@@ -151,7 +163,7 @@ class CustomerSchema(ma.SQLAlchemySchema):
     filters = fields.List(
         fields.Tuple(
             (
-                fields.Str(), 
+                StrListField(), 
                 fields.Field(), 
                 fields.Str()
             )

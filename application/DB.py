@@ -1,83 +1,32 @@
 import sqlite3
 from sqlite3 import Error
 from datetime import date, datetime
+from warnings import filterwarnings
 from Customer import Customer
 from configHandler import config
+import DBUtils
+import LocalDB
 import UI
 import logging
 import os
 import pathlib
+import traceback
 
-
-db_path = ":memory:"
+isLocal = False
+if config['DATABASE']['local_database'] == '1':
+    isLocal = True
 
 def CreateDatabase(path:str = None):
     """Creates the database file if it is missing
     """
-    
-    if path:
-        global db_path 
-        db_path = f"{pathlib.Path(__file__).parent.absolute()}\{path}"
-        print(db_path)
-        
-    conn = CreateConnection()
-    cur = conn.cursor()
-    
-    try:
-        sql = """ CREATE TABLE rooms (
-        RoomID   INTEGER PRIMARY KEY
-                        NOT NULL,
-        RoomType INTEGER NOT NULL
-        ); """
-        
-        cur.execute(sql)
-        
-        sql = """CREATE TABLE customers (
-        CustomerID    INTEGER NOT NULL
-                            PRIMARY KEY
-                            UNIQUE,
-        CustomerName  TEXT    NOT NULL,
-        People        INTEGER,
-        CheckIn       DATE,
-        CheckOut      DATE,
-        PricePerNight REAL,
-        RoomID        INTEGER NOT NULL,
-        BookingType   INTEGER NOT NULL,
-        Comments      STRING,
-        NumberOfStayNights INTEGER,
-        TotalPrice         REAL,
-        FOREIGN KEY (
-            RoomID
-        )
-        REFERENCES rooms (RoomID) 
-        );"""
-        
-        cur.execute(sql)
-        conn.commit()
-    except Error as e:
-        errorW = UI.ErrorWindow(e)
-    
-
-def CreateConnection():
-    """ create a database connection to the SQLite database
-        specified by the db_file
-    :param db_file: database file
-    :return: Connection object or None
-    """
-    conn = None
-    try:
-        conn = sqlite3.connect(db_path)
-    except Error as e:
-        DBError(e)
-        print(e)
-
-    return conn
+    if isLocal:
+        LocalDB.CreateDatabase(path)
 
 def DBError(error=''):
     errorW = UI.ErrorWindow(f'Αποτυχία σύνδεσης με βάση δεδομένων!\n{error}')
     errorW.show()
 
-def ConvertStringToDate(dateString):
+def ConvertStringToDate(dateString: str):
     """Converts a string to a datetime object. YYYY-MM-DD
 
     :param dateString: The string to get converted
@@ -90,28 +39,23 @@ def ConvertStringToDate(dateString):
         logging.exception("exception")
         return dateString
 
-def AddCustomer(customer):
+def AddCustomer(customer: Customer):
     """Add the customer Data to the DB
 
     Args:
         :param customer: The customer object
     """
     
-    conn = CreateConnection()
-    
-    if conn is None:
-        DBError()
-        return None
-    
-    sql = ''' INSERT INTO customers(CustomerName,People,CheckIn,CheckOut,PricePerNight,RoomID,BookingType,Comments,NumberOfStayNights,TotalPrice)
-              VALUES(?,?,?,?,?,?,?,?,?,?) '''
-    cur = conn.cursor()
-    cur.execute(sql, customer.GetSQLFormatedDataForInsertion())
-    conn.commit()
-    conn.close()
-
-    return cur.lastrowid
-
+    if isLocal:
+        return LocalDB.AddCustomer(customer)
+    else:
+        try:
+            return DBUtils.PUT('customers', customer.GetDictFormatedData())
+        except Exception as e:
+            DBError(str(e))
+            print(e)
+            traceback.print_exc()
+        
 def UpdateCustomer(customerID, customer: Customer):
     """Updates an existing customer in the database with new data
 
@@ -119,21 +63,18 @@ def UpdateCustomer(customerID, customer: Customer):
     :param customer: The customer object
     """
     
-    conn = CreateConnection()
-    if conn is None:
-        DBError()
-        return None
-    
-    data = customer.GetSQLFormatedDataForInsertion()
-    data.append(customerID)
-    
-    sql = ''' UPDATE customers SET CustomerName = ?,People = ?,CheckIn = ?,CheckOut = ?,PricePerNight = ?,RoomID = ?,BookingType = ?,Comments = ?,NumberOfStayNights = ?,TotalPrice = ? WHERE CustomerID = ?'''
-    cur = conn.cursor()
-    cur.execute(sql, data)
-    conn.commit()
-    conn.close()
-    
-    return cur.lastrowid
+    if isLocal:
+        return LocalDB.UpdateCustomer(customerID, customer)
+    else:
+        try:
+            payload = customer.GetDictFormatedData()
+            payload['filters'] = ('customer_id', customerID, 'eq')
+            
+            return DBUtils.PATCH('customers', payload)
+        except Exception as e:
+            DBError(str(e))
+            print(e)
+            traceback.print_exc()
 
 def DeleteCustomer(CustomerID):
     """Deletes a customer
@@ -141,53 +82,55 @@ def DeleteCustomer(CustomerID):
     :param CustomerID: The ID of the customer to delete
     """
     
-    conn = CreateConnection()
-    if conn is None:
-        DBError()
-        return None
-
-    cur = conn.cursor()
-    cur.execute('DELETE FROM customers WHERE CustomerID = ?;', (CustomerID,))
-    conn.commit()
-    conn.close()
-    
-    return cur.lastrowid
+    if isLocal:
+        return LocalDB.DeleteCustomer(CustomerID)
+    else:
+        try:
+            return DBUtils.DELETE('customers', [('customer_id', CustomerID, 'eq')])
+        except Exception as e:
+            DBError(str(e))
+            print(e)
+            traceback.print_exc()
     
 
-def GetCustomer(name: str, year=datetime.today().year):
+def GetCustomer(name: str, year: int = datetime.today().year):
     """
 
         :param name: The name of the customer to get the data of
         :param year: The date of the check in. defaults to current year
     """
-    
-    conn = CreateConnection()
-    if conn is None:
-        DBError()
-        return None
-    
-    cur = conn.cursor()
-    cur.execute(f'SELECT CustomerID, CustomerName, People, CheckIn, CheckOut, PricePerNight, RoomID, BookingType, Comments, NumberOfStayNights, TotalPrice FROM customers WHERE CustomerName = "{name.lower()}" AND CheckIn LIKE "{year}%"')
-    temp = cur.fetchall()
-    conn.close()
-    
-    if not temp:
-        return None
-    
-    # convert tuple to list
-    data = [list(i) for i in temp]
-    
-    for item in data:
-        item[3] = ConvertStringToDate(item[3])
-        
-        item[4] = ConvertStringToDate(item[4])
-    
-    customers = []  
-    for item in data:
-        customers.append(Customer(item[1], item[3], item[4], item[6], item[7], item[5], item[2], item[0], item[8], item[9], item[10]))
-    
-        
-    return customers
+    name = name.lower()
+    if isLocal:
+        return LocalDB.GetCustomer(name, year)
+    else:
+        try:
+            filters = [
+                ('customer_name', name, 'like'),
+                ('check_in', year, 'like')
+            ]
+            data = DBUtils.GET('customers', filters)
+            if len(data) == 0:
+                return None
+            
+            customers = []
+            for item in data:
+                customers.append(Customer(Name=item['customer_name'],
+                                          CheckIn=ConvertStringToDate(item['check_in']),
+                                          CheckOut=ConvertStringToDate(item['check_out']),
+                                          RoomID=item['room_id'],
+                                          BookingType=item['booking_type'],
+                                          PricePerNight=item['price_per_night'],
+                                          People=item['number_of_people'],
+                                          CustomerID=item['customer_id'],
+                                          Comments=item['comment'],
+                                          NumberOfStayNights=item['stay_days_number']))
+                
+            return customers
+        except Exception as e:
+            DBError(str(e))
+            print(e)
+            traceback.print_exc()
+
 
 def GetCustomerByID(customerID):
     """
@@ -195,28 +138,33 @@ def GetCustomerByID(customerID):
         :param customerID: The ID of the customer
     """
     
-    conn = CreateConnection()
-    if conn is None:
-        DBError()
-        return None
-    
-    cur = conn.cursor()
-    cur.execute(f'SELECT CustomerID, CustomerName, People, CheckIn, CheckOut, PricePerNight, RoomID, BookingType, Comments, NumberOfStayNights, TotalPrice FROM customers WHERE CustomerID = "{customerID}"')
-    temp = cur.fetchall()
-    conn.close()
-    
-    if not temp:
-        return None
-    
-    # convert tuple to list
-    data = [list(i) for i in temp]
-
-    data[0][3] = ConvertStringToDate(data[0][3])
+    if isLocal:
+        return LocalDB.GetCustomerByID(customerID)
+    else:
+        try:
+            data = DBUtils.GET('customers', [('customer_id', customerID, 'eq')])
+            if len(data) == 0:
+                return None
+            
+            return Customer(Name=data[0]['customer_name'],
+                            CheckIn=ConvertStringToDate(data[0]['check_in']),
+                            CheckOut=ConvertStringToDate(data[0]['check_out']),
+                            RoomID=data[0]['room_id'],
+                            BookingType=data[0]['booking_type'],
+                            PricePerNight=data[0]['price_per_night'],
+                            People=data[0]['number_of_people'],
+                            CustomerID=data[0]['customer_id'],
+                            Comments=data[0]['comment'],
+                            NumberOfStayNights=data[0]['stay_days_number'])
         
-    data[0][4] = ConvertStringToDate(data[0][4])
-        
-    return Customer(data[0][1], data[0][3], data[0][4], data[0][6], data[0][7], data[0][5], data[0][2], data[0][0], data[0][8], data[0][9], data[0][10])
-
+        except IndexError:
+            return None
+          
+        except Exception as e:
+            DBError(str(e))
+            print(e)
+            traceback.print_exc()
+    
 def GetCustomerIDByName(name: str):
     """Returns the CustomerID of a given name
 
@@ -225,72 +173,71 @@ def GetCustomerIDByName(name: str):
         :return: List of the CustomerIDs found or None
     """
     
-    conn = CreateConnection()
-    if conn is None:
-        DBError()
-        return None
-    
-    cur = conn.cursor()
-    cur.execute(f'SELECT CustomerID FROM customers WHERE CustomerName = "{name.lower()}"')
-    temp = cur.fetchall()
-    conn.close()
-    
-    if not temp:
-        return None
-    
-    customerID = []
-    for item in temp:
-        customerID.append(item[0])
-    
-    return customerID
+    if isLocal:
+        return LocalDB.GetCustomerIDByName(name)
+    else:
+        try:
+            filters = [
+                ('customer_name', name, 'like'),
+            ]
+            data = DBUtils.GET('customers', filters)
+            if len(data) == 0:
+                return None
+            
+            customerID = []
+            for item in data:
+                customerID.append(item[0])
+            
+            return customerID
+        except IndexError:
+            return None
+        
+        except Exception as e:
+            DBError(str(e))
+            print(e)
+            traceback.print_exc()
 
-def GetCustomersByMonth(month=datetime.today().month, year=datetime.today().year, roomType=0):
+def GetCustomersByMonth(month=datetime.today().month, year=datetime.today().year, roomType=0) -> list[Customer]:
     """Returns all the customers of the given month and roomType. Defaults to getting all the data per month
 
     :param month: The month to get the data. Defaults to the current month
     :param year: The year to get the data. Default to current year
     :param roomType: The ID of the type of room
     """
-    conn = CreateConnection()
-    if conn is None:
-        DBError()
-        return None
     
-    if month < 10:
-        month = f'0{str(month)}'
-    
-    sql = f'''SELECT CustomerID, CustomerName, People, CheckIn, CheckOut, PricePerNight, RoomID, BookingType, Comments, NumberOfStayNights, TotalPrice
-    FROM customers 
-    WHERE CheckIn LIKE "{year}-{month}%" OR CheckOut LIKE "{year}-{month}%" 
-    ORDER BY CheckIn'''
-    
-    if roomType != 0:
-        sql = f'''SELECT CustomerID, CustomerName, People, CheckIn, CheckOut, PricePerNight, RoomID, BookingType, Comments, NumberOfStayNights, TotalPrice 
-    FROM customers 
-    WHERE (CheckIn LIKE "{year}-{month}%" OR CheckOut LIKE "{year}-{month}%") AND RoomID IN {GetRoomsByType(conn, roomType)}
-    ORDER BY CheckIn'''
-    
-    cur = conn.cursor()
-    cur.execute(sql)
-    temp = cur.fetchall()
-    conn.close()
-    
-    if not temp:
-        return None
-    
-    # convert tuple to list
-    data = [list(i) for i in temp]
-    
-    for item in data:
-        item[3] = ConvertStringToDate(item[3])
+    if isLocal:
+        return LocalDB.GetCustomersByMonth(month, year, roomType)
+    else:
+        try:
+            if month < 10:
+                month = f'0{str(month)}'
+            
+            filters = [
+                (['check_in', 'check_out'], [f'{year}-{month}', f'{year}-{month}'], 'or'),
+            ]
+            data = DBUtils.GET('customers', filters)
+            if len(data) == 0:
+                return None
+            
+            customers = []
+            for item in data:
+                customers.append(Customer(Name=item['customer_name'],
+                                          CheckIn=ConvertStringToDate(item['check_in']),
+                                          CheckOut=ConvertStringToDate(item['check_out']),
+                                          RoomID=item['room_id'],
+                                          BookingType=item['booking_type'],
+                                          PricePerNight=item['price_per_night'],
+                                          People=item['number_of_people'],
+                                          CustomerID=item['customer_id'],
+                                          Comments=item['comment'],
+                                          NumberOfStayNights=item['stay_days_number']))
+                
+            return customers
         
-        item[4] = ConvertStringToDate(item[4])
-
-    customers = []  
-    for item in data:
-        customers.append(Customer(item[1], item[3], item[4], item[6], item[7], item[5], item[2], item[0], item[8], item[9], item[10]))
-    
-    return customers
+        except Exception as e:
+            DBError(str(e))
+            print(e)
+            traceback.print_exc()
     
 def GetCustomersByRoomID(roomID):
     """Returns all the customers of the given roomID
@@ -301,34 +248,36 @@ def GetCustomersByRoomID(roomID):
         :return: List of the customers or None
     """
     
-    conn = CreateConnection()
-    if conn is None:
-        DBError()
-        return None
-    
-    cur = conn.cursor()
-    cur.execute(f'SELECT CustomerID, CustomerName, People, CheckIn, CheckOut, PricePerNight, RoomID, BookingType, Comments, NumberOfStayNights, TotalPrice FROM customers WHERE RoomID = {roomID} ORDER BY CheckIn')
-    temp = cur.fetchall()
-    conn.close()
-    
-    if not temp:
-        return None
-    
-    # convert tuple to list
-    data = [list(i) for i in temp]
-    
-    for item in data:
-        item[3] = ConvertStringToDate(item[3])
+    if isLocal:
+        return LocalDB.GetCustomersByRoomID(roomID)
+    else:
+        try:
+            data = DBUtils.GET('rooms', [('room_id', roomID, 'eq')])
+            
+            if len(data) == 0:
+                return None
+            
+            customers = []
+            for item in data:
+                customers.append(Customer(Name=item['customer_name'],
+                                          CheckIn=ConvertStringToDate(item['check_in']),
+                                          CheckOut=ConvertStringToDate(item['check_out']),
+                                          RoomID=item['room_id'],
+                                          BookingType=item['booking_type'],
+                                          PricePerNight=item['price_per_night'],
+                                          People=item['number_of_people'],
+                                          CustomerID=item['customer_id'],
+                                          Comments=item['comment'],
+                                          NumberOfStayNights=item['stay_days_number']))
+                
+            return customers
         
-        item[4] = ConvertStringToDate(item[4])
-    
-    customers = []  
-    for item in data:
-        customers.append(Customer(item[1], item[3], item[4], item[6], item[7], item[5], item[2], item[0], item[8], item[9], item[10]))
-        
-    return customers
+        except Exception as e:
+            DBError(str(e))
+            print(e)
+            traceback.print_exc()
 
-def GetRoomOccupiedDates(roomID, year=datetime.today().year, exclude=[]):
+def GetRoomOccupiedDates(roomID, year=datetime.today().year, exclude:list = None):
     """Returns the dates the room is occupied
 
     Args:
@@ -340,44 +289,46 @@ def GetRoomOccupiedDates(roomID, year=datetime.today().year, exclude=[]):
         :return: List of dates the room is occupied
     """
     
-    conn = CreateConnection()
-    if conn is None:
-        DBError()
-        return None
-    
-    cur = conn.cursor()
-    cur.execute(f'SELECT CheckIn, CheckOut FROM customers WHERE RoomID = {roomID} AND (CheckIn LIKE "{year}%" OR CheckOut LIKE "{year}%") ORDER BY CheckIn')
-    Temp = cur.fetchall()
-    conn.close()
-    
-    if not Temp:
-        return None
-    
-    # convert Tuple Temp to list
-    datesTemp = [list(i) for i in Temp]
-    
-    try:
-        datesTemp.remove([exclude[0].strftime('%Y-%m-%d'), exclude[1].strftime('%Y-%m-%d')])
-    except Exception as e:
-        print(e)
-    try:
-        # Congregate dates into chunks
-        dates = [[datesTemp[0][0], datesTemp[0][1]]]
-        for item in datesTemp[1:]:
-            if dates[len(dates) - 1][1] == item[0]:
-                dates[len(dates) - 1][1] = item[1]
-            else:
-                dates.append(item)
-        
-        # Convert dates from string to datetime objects
-        for item in dates: 
-            item[0] = ConvertStringToDate(item[0])
+    if isLocal:
+        return LocalDB.GetRoomOccupiedDates(roomID, year, exclude)
+    else:
+        try:
+            filters = [
+                ('room_id', roomID, 'eq'),
+                (['check_in', 'check_out'], [f'{year}', f'{year}'], 'or'),
+            ]
+            data = DBUtils.GET('customers', filters)
             
-            item[1] = ConvertStringToDate(item[1])
+            datesTemp = []
+            for item in data:
+                datesTemp.append([item['check_in'], item['check_out']])
+                        
+            try:
+                datesTemp.remove([exclude[0].strftime('%Y-%m-%d'), exclude[1].strftime('%Y-%m-%d')])
+            except Exception as e: 
+                pass
+            try:
+                # Congregate dates into chunks
+                dates = [[datesTemp[0][0], datesTemp[0][1]]]
+                for item in datesTemp[1:]:
+                    if dates[len(dates) - 1][1] == item[0]:
+                        dates[len(dates) - 1][1] = item[1]
+                    else:
+                        dates.append(item)
+                
+                # Convert dates from string to datetime objects
+                for item in dates: 
+                    item[0] = ConvertStringToDate(item[0])
+                    
+                    item[1] = ConvertStringToDate(item[1])
 
-        return dates
-    except IndexError:
-        return None
+                return dates
+            except IndexError:
+                return None
+        except Exception as e:
+            DBError(str(e))
+            print(e)
+            traceback.print_exc()
 
 def GetRoomType(roomID):
     """Returns the type of room for a given ID
@@ -386,17 +337,20 @@ def GetRoomType(roomID):
     :param roomID: The ID of the room
     """
     
-    conn = CreateConnection()
-    if conn is None:
-        DBError()
-        return None
-    
-    cur = conn.cursor()
-    cur.execute(f'SELECT RoomType FROM rooms WHERE RoomID = {roomID}')
-    temp = cur.fetchall()
-    conn.close()
-    
-    return temp[0][0]
+    if isLocal:
+        return LocalDB.GetRoomType(roomID)
+    else:
+        try:
+            data = DBUtils.GET('rooms', [('room_id', roomID, 'eq')])
+            return data[0]['room_type']
+        
+        except IndexError:
+            return None
+        
+        except Exception as e:
+            DBError(str(e))
+            print(e)
+            traceback.print_exc()
 
 def GetRoomNumber(roomType=0):
     """Returns the number of rooms for a given type. By default returns the number of all rooms
@@ -404,22 +358,20 @@ def GetRoomNumber(roomType=0):
     :param roomType [int]: The ID of the room type
     """
     
-    conn = CreateConnection()
-    if conn is None:
-        DBError()
-        return None
-    
-    sql = 'SELECT RoomType FROM rooms'
-    
-    if roomType != 0:
-        sql = f'SELECT RoomType FROM rooms WHERE RoomType = {roomType}'
-        
-    cur = conn.cursor()
-    cur.execute(sql)
-    temp = cur.fetchall()
-    conn.close()
-    
-    return len(temp)
+    if isLocal:
+        return LocalDB.GetRoomNumber(roomType)
+    else:
+        try:
+            if roomType == 0:
+                filt = [('room_type', 0, 'ge')]
+            else:
+                filt = [('room_type', roomType, 'eq')]
+            
+            return len(DBUtils.GET('rooms', filt))
+        except Exception as e:
+            DBError(str(e))
+            print(e)
+            traceback.print_exc()
 
 def GetRoomsByType(roomType:int = None):
     """Returns all the room IDs for the given room type. Defaults to returning all rooms
@@ -427,26 +379,22 @@ def GetRoomsByType(roomType:int = None):
     :param roomType [int]: The ID of the room type
     """
     
-    conn = CreateConnection()
-    if conn is None:
-        DBError()
-        return None
-    
-    if roomType:
-        sql = f'SELECT RoomID FROM rooms WHERE RoomType = {roomType} ORDER BY RoomID'
+    if isLocal:
+        return LocalDB.GetRoomsByType(roomType)
     else:
-        sql = 'SELECT RoomID FROM rooms'
-    
-    cur = conn.cursor()
-    cur.execute(sql)
-    temp = cur.fetchall()
-    conn.close()
-    
-    data = []
-    for item in temp:
-        data.append(item[0])
-    
-    return tuple(data)
+        try:
+            if roomType == 0:
+                filt = [('room_type', 0, 'ge')]
+            else:
+                filt = [('room_type', roomType, 'eq')]
+            
+            data = DBUtils.GET('rooms', filt)
+            
+            return tuple([i['room_id'] for i in data])
+        except Exception as e:
+            DBError(str(e))
+            print(e)
+            traceback.print_exc()
 
 def AddRoom(roomID, roomType):
     """Adds a new room to the database
@@ -455,19 +403,19 @@ def AddRoom(roomID, roomType):
     :param roomType: The type of the room
     """
     
-    conn = CreateConnection()
-    if conn is None:
-        DBError()
-        return None
-    
-    sql = "INSERT INTO rooms(RoomID,RoomType) Values(?,?)"
-    
-    cur = conn.cursor()
-    cur.execute(sql, (roomID, roomType))
-    conn.commit()
-    conn.close()
-    
-    return cur.lastrowid
+    if isLocal:
+        return LocalDB.AddRoom(roomID, roomType)
+    else:
+        try:
+            payload = {
+                'room_id': roomID,
+                'roomType': roomType
+            }
+            return DBUtils.PUT('rooms', payload)
+        except Exception as e:
+            DBError(str(e))
+            print(e)
+            traceback.print_exc()
 
 def DeleteRoom(roomID):
     """Deletes a room from the database
@@ -476,14 +424,12 @@ def DeleteRoom(roomID):
     :param roomID: The ID of the room to delete
     """
     
-    conn = CreateConnection()
-    if conn is None:
-        DBError()
-        return None
-
-    cur = conn.cursor()
-    cur.execute('DELETE FROM rooms WHERE RoomID = ?;', (roomID,))
-    conn.commit()
-    conn.close()
-    
-    return cur.lastrowid
+    if isLocal:
+        return LocalDB.DeleteRoom(roomID)
+    else:
+        try:
+            return DBUtils.DELETE('rooms', [('room_id', roomID, 'eq')])
+        except Exception as e:
+            DBError(str(e))
+            print(e)
+            traceback.print_exc()

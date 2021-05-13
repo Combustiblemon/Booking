@@ -6,9 +6,12 @@ from datetime import datetime, date, timedelta
 from Customer import Customer
 import platform
 import DB
-from files.UI import ui_MainWindow, ui_AddRoom, ui_CustomerData, ui_CustomerInfo, ui_DeleteRoom, ui_ErrorWindow, ui_LoadingWindow
+from files.UI import ui_MainWindow, ui_AddRoom, ui_CustomerData, ui_CustomerInfo, ui_DeleteRoom, ui_ErrorWindow, ui_LoadingWindow, ui_PasswordWindow
 import json
 import pathlib
+from calendar import monthrange
+
+
 
 FilePath = pathlib.Path(__file__).parent.absolute()
 dictionary = {} 
@@ -120,10 +123,18 @@ class MainWindow(QtWidgets.QMainWindow):
                     row = rooms.index(item.RoomID)  # find the row by searching the room list
                     column = item.CheckIn.day - 1  # starting column is the check in day
                     span = item.NumberOfStayNights  # how many cells to merge based on the stay days
-                    if item.CheckIn.month < (self.monthSelection.currentIndex() + 1):  # if the CheckIn date is on a previous month calculate difference
+                    if item.CheckIn.month < (self.monthSelection.currentIndex() + 1) and item.CheckOut.month > (self.monthSelection.currentIndex() + 1):
                         column = 0
-                        delta = -(item.CheckIn - date(self.yearSelection.date().year(), self.monthSelection.currentIndex() + 1, 1))
-                        span = item.NumberOfStayNights - delta.days + 1  # set span to difference
+                        _, daysInMonth = monthrange(self.yearSelection.date().year(), self.monthSelection.currentIndex() + 1)
+                        span = daysInMonth
+                    elif item.CheckIn.month < (self.monthSelection.currentIndex() + 1):  # if the CheckIn date is on a previous month calculate difference
+                        column = 0
+                        span = item.CheckOut.day - 1
+                    elif item.CheckOut.month > (self.monthSelection.currentIndex() + 1):
+                        _, daysInMonth = monthrange(item.CheckIn.year, item.CheckIn.month)
+                        delta = (date(item.CheckIn.year, item.CheckIn.month, daysInMonth) - item.CheckIn).days
+                        span = delta + 1
+                        
                     
                     self.tableWidget.setItem(row, column, QtWidgets.QTableWidgetItem(f'"{item.Name}" Άτομα: {item.People} Τιμή ανά βράδυ: {item.PricePerNight}'))
                     temp = self.tableWidget.item(row, column)  # access the item just created

@@ -1,10 +1,10 @@
 from flask_restful import abort
 from flask_sqlalchemy import SQLAlchemy, Model
 from sqlalchemy.orm.query import Query
-from .models import db
+from sqlalchemy.orm.session import Session
 
 
-def constructDBQuery(tablename: Model, criteria: list) -> Query:
+def constructDBQuery(tablename, criteria: list, session: Session) -> Query:
     '''
     Criteria should be::
         ('parameter', value, 'operation')
@@ -16,10 +16,8 @@ def constructDBQuery(tablename: Model, criteria: list) -> Query:
         ge -> >=\n
         le -> <=\n
         nt -> !=
-        like
-        or
     '''
-    query = db.session.query(tablename)
+    query = session.query(tablename)
     for _filter, value, operation in criteria:
         operation.lower().strip()
         if operation == 'eq':
@@ -34,12 +32,5 @@ def constructDBQuery(tablename: Model, criteria: list) -> Query:
             query = query.filter(getattr(tablename, _filter) <= value)
         elif operation == 'nt':
             query = query.filter(getattr(tablename, _filter) != value)
-        elif operation == 'like':
-            query = query.filter(getattr(tablename, _filter).like(f"%{value}%"))
-        elif operation == 'or':
-            query = query.filter(getattr(tablename, _filter[0]).like(f"%{value[0]}%") | getattr(tablename, _filter[1]).like(f"%{value[1]}%"))
     
     return query.limit(150)
-
-def getReturnObject(status_code: int = 0, **data) -> tuple:
-    return (data, status_code)
