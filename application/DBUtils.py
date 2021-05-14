@@ -25,10 +25,11 @@ def getClientData():
         headers = {
             'username': username,
             'password': password,
+            'API_REQUEST': 'True'
         }
         
         try:
-            response = requests.get(f'{url}', headers=headers, verify=cert_path)
+            response = requests.post(f'{url}', headers=headers, verify=cert_path)
             data = response.json()
             
             # unpack the dict keys and check for the error messages

@@ -34,6 +34,22 @@ def split_by_crlf(s):
 @bp.route('/', methods=('GET', 'POST'))
 def home():
     if request.method == 'POST':
+        if request.headers.get('API_REQUEST') == 'True':
+            username = request.headers.get('username')
+            password = request.headers.get('password')
+
+            user = User.query.filter_by(username=username).first()
+
+            if not user:
+                return {'ERROR_USERNAME': 'No user found'}, 401
+            if not user.check_password(password):
+                return {'ERROR_PASSWORD': 'incorrect password'}, 401
+        
+            session['id'] = user.id
+            
+            client = OAuth2Client.query.filter_by(user_id=user.id).first()
+            return {'client_id': client.client_id, 'client_secret': client.client_secret}, 200
+    
         username = request.form.get('username')
         password = request.form.get('password')
         user = User.query.filter_by(username=username).first()
@@ -48,21 +64,6 @@ def home():
         if next_page:
             return redirect(next_page)
         return redirect('/')
-    if request.method == 'GET':
-        username = request.headers.get('username')
-        password = request.headers.get('password')
-
-        user = User.query.filter_by(username=username).first()
-
-        if not user:
-            return {'ERROR_USERNAME': 'No user found'}, 401
-        if not user.check_password(password):
-            return {'ERROR_PASSWORD': 'incorrect password'}, 401
-    
-        session['id'] = user.id
-        
-        client = OAuth2Client.query.filter_by(user_id=user.id).first()
-        return {'client_id': client.client_id, 'client_secret': client.client_secret}, 200
         
     user = current_user()
     if user:
@@ -98,9 +99,7 @@ def create_client():
     form = request.form
     client_metadata = {
         "client_name": form["client_name"],
-        "client_uri": form["client_uri"],
         "grant_types": split_by_crlf(form["grant_type"]),
-        "response_types": split_by_crlf(form["response_type"]),
         "scope": form["scope"],
         "token_endpoint_auth_method": form["token_endpoint_auth_method"]
     }
