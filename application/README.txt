@@ -1,0 +1,1 @@
+setting local_database = 1 in the config will use a local db instead of trying to connect to the ip address
