@@ -19,6 +19,7 @@ if config['DATABASE']['local_database'] == '1':
 def CreateDatabase(path:str = None):
     """Creates the database file if it is missing
     """
+    # no need to create a local DB if we're running on remote
     if isLocal:
         LocalDB.CreateDatabase(path)
 
@@ -94,7 +95,7 @@ def DeleteCustomer(CustomerID):
     
 
 def GetCustomer(name: str, year: int = datetime.today().year):
-    """
+    """Get customer data from name and year of stay
 
         :param name: The name of the customer to get the data of
         :param year: The date of the check in. defaults to current year
@@ -133,7 +134,7 @@ def GetCustomer(name: str, year: int = datetime.today().year):
 
 
 def GetCustomerByID(customerID):
-    """
+    """Get customer data by ID
 
         :param customerID: The ID of the customer
     """

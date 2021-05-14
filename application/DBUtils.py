@@ -18,6 +18,7 @@ access_token = None
 
 def getClientData():
     global username, password
+    # keep asking for the login details as long as they are not valid
     while not username or not password:
         username, password = getLoginDetails()
 
@@ -29,6 +30,9 @@ def getClientData():
         try:
             response = requests.get(f'{url}', headers=headers, verify=cert_path)
             data = response.json()
+            
+            # unpack the dict keys and check for the error messages
+            # if there is an error set login details to None and try again
             dKeys = [*data]
             if 'ERROR_USERNAME' in dKeys:
                 username = password = None
@@ -38,9 +42,11 @@ def getClientData():
                 username = password = None
                 continue
             
+            # after successful login set the client_id and client_secret globals
             global client_id, client_secret
             client_id = data['client_id']
             client_secret = data['client_secret']
+            
             return (data['client_id'], data['client_secret'])
         except requests.exceptions.ConnectionError:
             w = ErrorWindow('Αποτυχία σύνδεσης με την βάση δεδομένων!')
@@ -49,6 +55,7 @@ def getClientData():
 
 def getAccessToken() -> str:
     global client_id, client_secret
+    # keep asking for the client data as long as there's no data saved
     while not client_id or not client_secret:
         data = getClientData()
         
@@ -67,9 +74,11 @@ def getAccessToken() -> str:
     except requests.exceptions.ConnectionError:
         w = ErrorWindow('Αποτυχία σύνδεσης με την βάση δεδομένων!')
         w.show()
+        return
 
 def GET(route: str, filters: list):
     global access_token
+    # keep asking for the client data as long as there's no data saved
     while not access_token:
         access_token = getAccessToken()
    
@@ -88,6 +97,7 @@ def GET(route: str, filters: list):
 
 def PUT(route: str, payload: dict):
     global access_token
+    # keep asking for the client data as long as there's no data saved
     if not access_token:
         access_token = getAccessToken()
    
@@ -102,6 +112,7 @@ def PUT(route: str, payload: dict):
 
 def PATCH(route: str, payload: dict):
     global access_token
+    # keep asking for the client data as long as there's no data saved
     while not access_token:
         access_token = getAccessToken()
    
@@ -116,6 +127,7 @@ def PATCH(route: str, payload: dict):
 
 def DELETE(route: str, filters: list):
     global access_token
+    # keep asking for the client data as long as there's no data saved
     while not access_token:
         access_token = getAccessToken()
    
@@ -132,6 +144,7 @@ def DELETE(route: str, filters: list):
         return True
     return False
 
+# UI elements here to avoid circular import from UI module
 class PasswordInputWindow(QtWidgets.QDialog):
     def __init__(self) -> None:
         super(PasswordInputWindow, self).__init__()
@@ -146,7 +159,7 @@ class PasswordInputWindow(QtWidgets.QDialog):
         self.usernameInput = self.findChild(QtWidgets.QLineEdit, "usernameInput")
         self.passwordInput = self.findChild(QtWidgets.QLineEdit, "passwordInput")
         
-    def GetData(self):
+    def GetData(self) -> tuple:
         """returns the user input (username, password)
         """
         if self.exec_() == QtWidgets.QDialog.Accepted:
@@ -165,7 +178,6 @@ class ErrorWindow(QtWidgets.QDialog):
         # Load the main UI file
         self.ui = ui_ErrorWindow.Ui_ErrorWindow()
         self.ui.setupUi(self)
-        #self.setWindowFlags(QtCore.Qt.WindowSystemMenuHint | QtCore.Qt.WindowTitleHint | QtCore.Qt.WindowCloseButtonHint | QtCore.Qt.WindowStaysOnTopHint)
         self.setWindowTitle(title)
         
         self.label = self.findChild(QtWidgets.QLabel, 'label')

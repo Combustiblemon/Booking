@@ -90,11 +90,7 @@ class MainWindow(QtWidgets.QMainWindow):
         # get the rooms based on the room type
         rooms = DB.GetRoomsByType(self.roomTypeSelection.currentIndex())
         
-        #
-        if self.roomTypeSelection.currentIndex() == 0:
-            rowNumber = DB.GetRoomNumber()
-        else:
-            rowNumber = DB.GetRoomNumber(self.roomTypeSelection.currentIndex())
+        
         
         currentRow = self.tableWidget.currentRow()
         currentColumn = self.tableWidget.currentColumn()
@@ -103,7 +99,8 @@ class MainWindow(QtWidgets.QMainWindow):
         try:
             # set the number of rows based on the selected roomtype
             self.tableWidget.setRowCount(0)
-        
+
+            #set up the rooms
             for item in rooms:
                 rowPosition = self.tableWidget.rowCount()
                 self.tableWidget.insertRow(rowPosition)
@@ -123,20 +120,24 @@ class MainWindow(QtWidgets.QMainWindow):
                     row = rooms.index(item.RoomID)  # find the row by searching the room list
                     column = item.CheckIn.day - 1  # starting column is the check in day
                     span = item.NumberOfStayNights  # how many cells to merge based on the stay days
+                    
+                    # if the check in is on a previous month and check out on a following month, set the cell span to the entire row
                     if item.CheckIn.month < (self.monthSelection.currentIndex() + 1) and item.CheckOut.month > (self.monthSelection.currentIndex() + 1):
                         column = 0
                         _, daysInMonth = monthrange(self.yearSelection.date().year(), self.monthSelection.currentIndex() + 1)
                         span = daysInMonth
-                    elif item.CheckIn.month < (self.monthSelection.currentIndex() + 1):  # if the CheckIn date is on a previous month calculate difference
+                    # if the CheckIn date is on a previous month only paint the days in the current month
+                    elif item.CheckIn.month < (self.monthSelection.currentIndex() + 1):  
                         column = 0
                         span = item.CheckOut.day - 1
+                    # if the Checkout date is on a following month calculate difference and only paint the days in the current month
                     elif item.CheckOut.month > (self.monthSelection.currentIndex() + 1):
                         _, daysInMonth = monthrange(item.CheckIn.year, item.CheckIn.month)
                         delta = (date(item.CheckIn.year, item.CheckIn.month, daysInMonth) - item.CheckIn).days
                         span = delta + 1
                         
                     
-                    self.tableWidget.setItem(row, column, QtWidgets.QTableWidgetItem(f'"{item.Name}" Άτομα: {item.People} Τιμή ανά βράδυ: {item.PricePerNight}'))
+                    self.tableWidget.setItem(row, column, QtWidgets.QTableWidgetItem(f'"{item.Name}" Άτομα: {item.People} Τιμή ανά βράδυ: {item.PricePerNight}')) # create a new item
                     temp = self.tableWidget.item(row, column)  # access the item just created
                     temp.setBackground(QColor(dictionary[f"{item.BookingType}"][1][0], dictionary[f"{item.BookingType}"][1][1], dictionary[f"{item.BookingType}"][1][2], a=150))  # set the background color of the item based on the dictionary
                     temp.setData(1, item.CustomerID)  # set the metadata of the item to the CustomerID
@@ -170,6 +171,7 @@ class MainWindow(QtWidgets.QMainWindow):
             occupiedDates = DB.GetRoomOccupiedDates(data.RoomID, data.CheckIn.year)
             try:
                 for item in occupiedDates:
+                    # check if the dates entered fall on another booking
                     if not (((data.CheckIn - item[0]).days < 0 and (data.CheckOut - item[0]).days <= 0) or ((data.CheckIn - item[1]).days >= 0 and (data.CheckOut - item[1]).days > 0)):
                         MessageBox('Σφάλμα', f'<p style="text-align:center;font-size:18px"><b>Ουπς...</p><p style="font-size:18px">Οι ημερομηνίες <b>"{data.CheckIn} - {data.CheckOut}"</b> συμπίπτουν με άλλη κράτηση.</p>', QMessageBox.Ok)
                         return
@@ -305,6 +307,8 @@ class CustomerDataWindow(QtWidgets.QDialog):
     
     def ConnectLogicToObjects(self):
         self.bookingTypeInput = self.findChild(QtWidgets.QComboBox, 'bookingTypeInput')
+        
+        # set up the booking types in the drop down
         data = []
         for item in dictionary.values():
             data.append(item[0])
@@ -362,6 +366,8 @@ class CustomerDataWindow(QtWidgets.QDialog):
         self.checkOutInput.setDate(date.addDays(5))
     
     def CheckOutChanged(self, date: QtCore.QDate):
+        # spaghetti because event fires twice
+        # this checks if the stay days are < 1 and readjusts the inputs
         if self.newDate != date and date != self.oldDate:
             if date <= self.checkInInput.date():
                 self.oldDate = date
@@ -425,10 +431,8 @@ class RemoveRoomWindow(QtWidgets.QDialog):
     def GetRooms(self):
         rooms = DB.GetRoomsByType()
         
-        
         if rooms:
             rooms = [str(i) for i in rooms]
-        
         
         return rooms
     
@@ -440,7 +444,6 @@ class RemoveRoomWindow(QtWidgets.QDialog):
                 msg = MessageBox('Προσοχή', f'Είστε σίγουροι ότι θέλετε να διαγράψετε το δωμάτιο "{item.text()}";')
                 if msg == QMessageBox.Yes:
                     DB.DeleteRoom(int(item.text()))
-                    
                     
                     return 1
         
