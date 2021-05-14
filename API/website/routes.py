@@ -186,7 +186,7 @@ def remove_none_fields(resp: Response, fields=None):
     return resp
 
 def getJSONFromRequest(request: request) -> str:
-    args = request.get_json(silent=True)
+    args = request.get_json()
     if not args:
         abort(400, message={'message': "Bad request. Data needs to be sent in JSON format."})
     
@@ -212,8 +212,8 @@ def api_rooms():
     JSONdata = getJSONFromRequest(request)
     if request.method == 'PUT':        
         try:
+            print(JSONdata)
             args = schemaRoom.loads(JSONdata) # pass the data through the serializer
-            
             result = ROOM.query.filter_by(room_id=args['room_id']).first() # check if a room exists with that ID
             
             if result:
@@ -223,7 +223,7 @@ def api_rooms():
             room = ROOM(room_id=args['room_id'], room_type=args['room_type'])
             db.session.add(room)
             db.session.commit()
-            return getReturnObject(200, message='Put operation completed successfully', room=room)
+            return getReturnObject(200, message='Put operation completed successfully')
         
         except marshmallow.ValidationError as e:
             return getReturnObject(400, message=e)
@@ -246,7 +246,7 @@ def api_rooms():
             
             db.session.commit()
 
-            return getReturnObject(200, message='PATCH operation successful.', room=result)
+            return getReturnObject(200, message='PATCH operation successful.')
         
         except marshmallow.ValidationError as e:
             return getReturnObject(400, message=e)
@@ -342,7 +342,7 @@ def api_customers():
             db.session.add(customer)
             db.session.commit()
             
-            return getReturnObject(201, message='PUT operation completed successfully.', customer=customer)
+            return getReturnObject(201, message='PUT operation completed successfully.')
         
         except marshmallow.ValidationError as e:
             return getReturnObject(400, message=e)
@@ -367,7 +367,7 @@ def api_customers():
                     setattr(item, k, v)
             
             db.session.commit()
-            return getReturnObject(200, message='PATCH operation successful.', customer=result) 
+            return getReturnObject(200, message='PATCH operation successful.') 
                 
         except marshmallow.ValidationError as e:
             return getReturnObject(400, message=e)

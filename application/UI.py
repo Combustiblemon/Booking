@@ -238,14 +238,14 @@ class CustomerInfoWindow(QtWidgets.QDialog):
         self.editButton = self.findChild(QtWidgets.QPushButton, 'editButton')
         self.editButton.clicked.connect(lambda EditInfo: self.EditInfo(customerInfo))
         
-    def SetLabelText(self, customerInfo):
+    def SetLabelText(self, customerInfo: Customer):
         text = f"""<p><b>Όνομα κράτησης:</b> {customerInfo.Name}</p>
                 <p>     <b>Αριθμός ατόμων:</b> {customerInfo.People}</p>
                 <p>     <b>Check in:</b>  {customerInfo.CheckIn}</p>
                 <p>     <b>Check out:</b> {customerInfo.CheckOut}</p>
                 <p>     <b>Διανυκτερεύσεις:</b> {customerInfo.NumberOfStayNights}</p>
                 <p>     <b>Τιμή ανά βράδυ:</b> {customerInfo.PricePerNight}€</p>
-                <p>     <b>Σύνολο:</b> {customerInfo.TotalPrice}€</p>
+                <p>     <b>Σύνολο:</b> {customerInfo.PricePerNight * customerInfo.NumberOfStayNights}€</p>
                 <p>     <b>Δωμάτιο:</b> {customerInfo.RoomID} ({self.GetRoomType(customerInfo.RoomID)})</p>
                 <p>     <b>Κράτηση από:</b> {dictionary[f"{customerInfo.BookingType}"][0]}</p>
                 

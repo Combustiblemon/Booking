@@ -69,7 +69,7 @@ def UpdateCustomer(customerID, customer: Customer):
     else:
         try:
             payload = customer.GetDictFormatedData()
-            payload['filters'] = ('customer_id', customerID, 'eq')
+            payload['filters'] = [('customer_id', customerID, 'eq')]
             
             return DBUtils.PATCH('customers', payload)
         except Exception as e:
@@ -410,7 +410,7 @@ def AddRoom(roomID, roomType):
         try:
             payload = {
                 'room_id': roomID,
-                'roomType': roomType
+                'room_type': roomType
             }
             return DBUtils.PUT('rooms', payload)
         except Exception as e:

@@ -105,7 +105,7 @@ def PUT(route: str, payload: dict):
     headers = {
         'Authorization': f'Bearer {access_token}',
     }
-        
+    print(json.dumps(payload))
     response = requests.put(f'{url}api/{route}', json=json.dumps(payload), headers=headers, verify=cert_path)
     if response.status_code == 200:
         return response.json()
