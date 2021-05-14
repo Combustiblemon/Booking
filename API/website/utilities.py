@@ -4,10 +4,15 @@ from sqlalchemy.orm.query import Query
 from .models import db
 
 
-def constructDBQuery(tablename: Model, criteria: list) -> Query:
-    '''
-    Criteria should be::
-        ('parameter', value, 'operation')
+def constructDBQuery(tablename: Model, filters: list) -> Query:
+    '''Dynamically constructs a query from the filters given
+    
+    each filter should be::
+    
+        (parameter: str, value: any, operation: str)
+    for the "like" and "or" operations each filter should be::
+    
+        ([parameter1_name: str, parameter2_name: str], [value1: any, value2: any], operation: str)
     
     posible operations::
         eq -> ==\n
@@ -15,12 +20,14 @@ def constructDBQuery(tablename: Model, criteria: list) -> Query:
         gt -> >\n
         ge -> >=\n
         le -> <=\n
-        nt -> !=
-        like
+        nt -> !=\n
+        like\n
         or
     '''
+    
+    # using getarrt() to grab the column and perform the operations on it
     query = db.session.query(tablename)
-    for _filter, value, operation in criteria:
+    for _filter, value, operation in filters:
         operation.lower().strip()
         if operation == 'eq':
             query = query.filter(getattr(tablename, _filter) == value)

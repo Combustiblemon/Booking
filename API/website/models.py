@@ -58,10 +58,11 @@ class OAuth2Token(db.Model, OAuth2TokenMixin):
     user_id = db.Column(db.Integer, db.ForeignKey('user.id', ondelete='CASCADE'))
     user = db.relationship('User')
 
+
     def is_refresh_token_active(self):
         if self.revoked:
             return False
-        expires_at = self.issued_at + self.expires_in * 2
+        expires_at = self.issued_at + self.expires_in
         return expires_at >= time.time()
 
 
@@ -126,7 +127,7 @@ class CUSTOMER(db.Model):
             'stay_days_number': self.stay_days_number
         }
         
-    
+    # the desired attributes of the class to be used in filtering attributes
     def __dir__() -> Iterable[str]:
         return ['customer_id',
                 'customer_name',

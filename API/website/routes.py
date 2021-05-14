@@ -48,6 +48,22 @@ def home():
         if next_page:
             return redirect(next_page)
         return redirect('/')
+    if request.method == 'GET':
+        username = request.headers.get('username')
+        password = request.headers.get('password')
+
+        user = User.query.filter_by(username=username).first()
+
+        if not user:
+            return {'ERROR_USERNAME': 'No user found'}, 401
+        if not user.check_password(password):
+            return {'ERROR_PASSWORD': 'incorrect password'}, 401
+    
+        session['id'] = user.id
+        
+        client = OAuth2Client.query.filter_by(user_id=user.id).first()
+        return {'client_id': client.client_id, 'client_secret': client.client_secret}, 200
+        
     user = current_user()
     if user:
         clients = OAuth2Client.query.filter_by(user_id=user.id).all()
@@ -138,7 +154,7 @@ def revoke_token():
 @bp.after_request
 def remove_none_fields(resp: Response, fields=None):
     """
-    removes all None fields
+    removes all None fields from the response.
     """
     
     if 'application/json' not in resp.content_type:
@@ -176,20 +192,11 @@ def getJSONFromRequest(request: request) -> str:
         abort(400, message={'message': "Bad request. Data needs to be sent in JSON format."})
     
     return args
-    
-@bp.route('/api/me')
-@require_oauth('api')
-def api_me():
-    print(current_token)
-    user = current_token.user
-    return jsonify(id=user.id, username=user.username)
-
 
 @bp.route('/echo', methods=['POST', 'GET', 'PUT', 'DELETE'])
 #@marshal_with(resource_fields.room)
 def echo():
-    # args = request_arguments.room.get.parse_args()
-    #print(data, request.get_data(), sep='\n')
+    # used for testing
     args = request.get_json(silent=True)
     
     if args:
@@ -206,13 +213,14 @@ def api_rooms():
     JSONdata = getJSONFromRequest(request)
     if request.method == 'PUT':        
         try:
-            args = schemaRoom.loads(JSONdata)
+            args = schemaRoom.loads(JSONdata) # pass the data through the serializer
             
-            result = ROOM.query.filter_by(room_id=args['room_id']).first()
+            result = ROOM.query.filter_by(room_id=args['room_id']).first() # check if a room exists with that ID
             
             if result:
                 return getReturnObject(400, message='Room ID already exists')
 
+            # create a new ROOM instance and add it to the DB
             room = ROOM(room_id=args['room_id'], room_type=args['room_type'])
             db.session.add(room)
             db.session.commit()
@@ -227,11 +235,13 @@ def api_rooms():
         
     elif request.method == 'PATCH':
         try:
-            args = schemaRoom.loads(JSONdata)
-            result = constructDBQuery(ROOM, args['filters']).all()
+            args = schemaRoom.loads(JSONdata) # pass the data through the serializer
+            result = constructDBQuery(ROOM, args['filters']).all() # check if the room exists before patching
+            
             if len(result) == 0:
                 return getReturnObject(404, message="Room doesn't exist, cannot update")
             
+            # only the room_type is mutable in ROOM
             for item in result:
                 item.room_type = args['room_type']
             
@@ -248,10 +258,10 @@ def api_rooms():
         
     elif request.method == 'GET':
         try: 
-            args = schemaRoom.loads(JSONdata)
+            args = schemaRoom.loads(JSONdata) # pass the data through the serializer
             result = constructDBQuery(ROOM, args['filters']).all()
             
-            return jsonify([RoomSchema().dump(i) for i in result])
+            return jsonify([RoomSchema().dump(i) for i in result]) # serialize all objects before they are returned
         
         except marshmallow.ValidationError as e:
             return getReturnObject(400, message=e)
@@ -262,8 +272,9 @@ def api_rooms():
         
     elif request.method == 'DELETE':        
         try:
-            args = schemaRoom.loads(JSONdata)
+            args = schemaRoom.loads(JSONdata)# pass the data through the serializer
             result = constructDBQuery(ROOM, args['filters']).all()
+            
             if len(result) == 0:
                 return getReturnObject(404, message=f'Room not found.\n filter: {args["filters"]}')
             
@@ -291,12 +302,13 @@ def api_customers():
     JSONdata = getJSONFromRequest(request)
     if request.method == 'PUT':
         try:
-            args = schemaCustomer.loads(JSONdata)
-            room = ROOM.query.filter_by(room_id=args['room_id']).first()
+            args = schemaCustomer.loads(JSONdata) # pass the data through the serializer
+            room = ROOM.query.filter_by(room_id=args['room_id']).first() # check if the room_id given with the customer exists
             
             if not room:
                 return getReturnObject(404, message='Room does not exist.')
             
+            #check if the specific customer and booking already exists
             result = CUSTOMER.query.filter_by(customer_name=args['customer_name'],
                                               number_of_people=args['number_of_people'],
                                               check_in=args['check_in'],
@@ -316,7 +328,7 @@ def api_customers():
             except AttributeError as e:
                 return getReturnObject(400, message='BAD DATE INPUT: One or both of the dates are not in ISO format (YYYY-MM-DD).')
             
-            
+            #create a new customer object and add it to the DB
             customer = CUSTOMER(customer_id=None, 
                                 customer_name=args['customer_name'], 
                                 number_of_people=args['number_of_people'], 
@@ -343,10 +355,11 @@ def api_customers():
     elif request.method == 'PATCH':
         #HINT: use setattr()
         try: 
-            args = schemaCustomer.loads(JSONdata)
+            args = schemaCustomer.loads(JSONdata) # pass the data through the serializer
             
             result = constructDBQuery(CUSTOMER, args['filters']).all()
             
+            # since we are requesting more attributes than the CUSTOMER class has we need to filter the excess out
             attrs = CUSTOMER.__dir__()
             for item in result:
                 for k, v in args.items():
@@ -366,11 +379,11 @@ def api_customers():
     
     elif request.method == 'GET':
         try: 
-            args = schemaCustomer.loads(JSONdata)
+            args = schemaCustomer.loads(JSONdata) # pass the data through the serializer
             
             result = constructDBQuery(CUSTOMER, args['filters']).all()
-            data = [CustomerSchema().dump(i) for i in result]
-            print(data)
+            data = [CustomerSchema().dump(i) for i in result] # serialize every entry that comes back
+
             return jsonify(data)
         
         except marshmallow.ValidationError as e:
@@ -382,7 +395,7 @@ def api_customers():
     
     elif request.method == 'DELETE':
         try: 
-            args = schemaCustomer.loads(JSONdata)
+            args = schemaCustomer.loads(JSONdata) # pass the data through the serializer
             result = constructDBQuery(CUSTOMER, args['filters']).all()
             
             for item in result:
